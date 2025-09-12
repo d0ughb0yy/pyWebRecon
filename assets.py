@@ -1,9 +1,6 @@
-import os
-import datetime
 import shlex
 import subprocess
-
-# timestamp = datetime.datetime.now()
+from subprocess import Popen
 
 # RECON_DIR = f"recon_{timestamp.day}-{timestamp.month}-{timestamp.year}"
 
@@ -11,13 +8,13 @@ def subdomain_enumeration(target_domain, recon_dir):
     '''Uses Subfinder and Puredns CLI tools to enumerate subdomains for a given target'''
 
     subdomain_list = []
-    # os.mkdir(RECON_DIR)
 
     #BEGIN SUBFINDER PROCESS
     print("=================================================================================")
     print("========================= Beginning Subfinder Enumeration =======================")
     print("\n")
 
+    # Executes subfinder with the give target domain and uses shlex to separate the output
     subfinder_domains = subprocess.check_output(["subfinder", "-d", f"{target_domain}", "-all", "-silent"])
     subfinder_domains = shlex.split(subfinder_domains.decode().rstrip())
 
@@ -35,6 +32,7 @@ def subdomain_enumeration(target_domain, recon_dir):
     print("=================================================================================")
     print("======================= Beginning Bruteforcing Subdomains =======================")
     print("\n")
+    
     puredns_results = subprocess.check_output(["puredns", "bruteforce", f"{wordlist_subdomains}" , f"{target_domain}", "-l", "500", "-q"])
     puredns_results = shlex.split(puredns_results.decode().rstrip())
     for domain in puredns_results:
@@ -62,17 +60,37 @@ def subdomain_permutation(recon_dir):
     print("======================== Beginning Subdomain Permutation ========================")
     print("\n")
 
-    gotator_results = subprocess.check_output(["gotator", "-sub", f"{recon_dir}/all_subdomains.txt" , "-md"])
+    gotator_results = subprocess.check_output(["gotator", "-sub", f"{recon_dir}/all_subdomains.txt" , "-md", "-silent"])
     gotator_results = shlex.split(gotator_results.decode().rstrip())
 
     for domain in gotator_results:
         permutated_subdomains.append(domain)
     
-    with open(f"{recon_dir}/permutated_subdomains.txt", "w") as f:
+    with open(f"{recon_dir}/permutated_subdomains.txt", "a") as f:
         for subdomain in permutated_subdomains:
             f.write(f"{subdomain}\n")
         f.close()
 
     print("=================================================================================")
     print("============================== Permutations done !! =============================")
+    print("\n")
+
+def probe(recon_dir):
+    '''Uses httpx to test for live hosts'''
+
+    live_subdomains = []
+
+    print("=================================================================================")
+    print("============================ Beginning httpx Probing ============================")
+    print("\n")
+
+    subprocess.run(
+        [
+            "httpx", "-silent", "-l", f"{recon_dir}/all_subdomains.txt", 
+            "-fc", "404", "-sc", "-location", "-server", "-cdn", "-title", "-rl", "50", "-no-color", 
+            "-o", f"{recon_dir}/httpx_full_scan.txt"
+        ],
+        stdout=subprocess.DEVNULL)
+    print("=================================================================================")
+    print("================================ Probing Done !! ================================")
     print("\n")

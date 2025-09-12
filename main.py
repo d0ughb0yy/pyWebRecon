@@ -1,5 +1,4 @@
-from assets import subdomain_enumeration
-from assets import subdomain_permutation
+from assets import subdomain_enumeration, subdomain_permutation, probe
 import datetime
 import os
 
@@ -49,3 +48,5 @@ if __name__ == "__main__":
 
     subdomain_enumeration(target_domain, recon_dir)
     subdomain_permutation(recon_dir)
+
+    probe(recon_dir)
