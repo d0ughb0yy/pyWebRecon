@@ -1,6 +1,7 @@
 import subprocess
 from pathlib import Path
 import threading
+from rich.progress import Progress
 
 
 def append_subfinder_files(input_file, target_file):

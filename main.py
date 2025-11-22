@@ -22,15 +22,8 @@ print(
 
 if __name__ == "__main__":
 
+
     if len(sys.argv) < 2 or sys.argv[1] in {"-h", "--help", "-help", "help"}:
-        print(
-            "Usage: python3 pywebrecon.py domain.com /path/to/first/wordlist /path/to/second/wordlist"
-        )
-        print(
-            "1st argument: Target domain\n2nd argument: First DNS bruteforce wordlist\n3rd argument: Second DNS bruteforce wordlist"
-        )
-        sys.exit(1)
-    elif IndexError:
         print(
             "Usage: python3 pywebrecon.py domain.com /path/to/first/wordlist /path/to/second/wordlist"
         )
