@@ -1,7 +1,6 @@
 import subprocess
 from pathlib import Path
 import threading
-from rich.progress import Progress
 
 
 def append_subfinder_files(input_file, target_file):
@@ -92,7 +91,6 @@ def subdomain_enumeration(target_domain, recon_dir, first_wordlist, second_wordl
         "========================= Beginning Subfinder Enumeration ======================="
     )
 
-    # Executes subfinder with the give target domain and uses shlex to separate the output
     result = subprocess.run(
         [
             "subfinder",
@@ -123,7 +121,7 @@ def subdomain_enumeration(target_domain, recon_dir, first_wordlist, second_wordl
         args=(
             target_domain,
             first_wordlist,
-            first_wordlist[34 : len(first_wordlist) - 4],
+            f"gobuster_{first_wordlist[34 : len(first_wordlist) - 4]}_output.txt",
         ),
     )
     first_thread.start()
@@ -150,7 +148,12 @@ def subdomain_enumeration(target_domain, recon_dir, first_wordlist, second_wordl
     )
 
     append_gobuster_files(
-        f"{recon_dir}/domain-recon/gobuster_dns_output.txt",
+        f"{recon_dir}/domain-recon/gobuster_{first_wordlist[34 : len(first_wordlist) - 4]}_output.txt",
+        f"{recon_dir}/domain-recon/all_subs.txt",
+    )
+
+    append_gobuster_files(
+        f"gobuster_{second_wordlist[34:len(second_wordlist)-4]}_output.txt",
         f"{recon_dir}/domain-recon/all_subs.txt",
     )
 
