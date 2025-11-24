@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from assets import subdomain_enumeration, subdomain_permutation, probe
 import os
 import sys
@@ -24,12 +25,8 @@ print(
 if __name__ == "__main__":
 
     if len(sys.argv) < 2 or sys.argv[1] in {"-h", "--help", "-help", "help"}:
-        print(
-            "Usage: python3 pywebrecon.py domain.com /path/to/first/wordlist /path/to/second/wordlist"
-        )
-        print(
-            "1st argument: Target domain\n2nd argument: First DNS bruteforce wordlist\n3rd argument: Second DNS bruteforce wordlist"
-        )
+        print("Usage: python3 pywebrecon.py domain.com")
+        print("[!] Wordlists for dnsx should be added to a .env file under FIRST_WORDLIST= and SECOND_WORDLIST= [!]")
         sys.exit(1)
 
     load_dotenv()

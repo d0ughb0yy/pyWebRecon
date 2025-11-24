@@ -92,7 +92,7 @@ def subdomain_enumeration(target_domain, recon_dir, first_wordlist, second_wordl
         f"{recon_dir}/domain-recon/all_subs.txt",
     )
     anew_exec(
-        f"{recon_dir}/domain-recon/dnsx_{second_wordlist[34 : len(first_wordlist) - 4]}_output.txt",
+        f"{recon_dir}/domain-recon/dnsx_{second_wordlist[34 : len(second_wordlist) - 4]}_output.txt",
         f"{recon_dir}/domain-recon/all_subs.txt",        
     )
 

@@ -1,6 +1,7 @@
 import subprocess
 from pathlib import Path
 
+
 def dnsx_exec(target, wordlist, out_file_name):
     result = subprocess.run(
         [
@@ -72,8 +73,9 @@ def httpx_exec(recon_dir):
     else:
         print(f"[!] HTTPX failed with error: {result.stderr}")
 
+
 def gotator_exec(recon_dir):
-    
+
     input_file = f"{recon_dir}/domain-recon/all_subs.txt"
     output_file = f"{recon_dir}/domain-recon/permutated_subs.txt"
 
@@ -90,6 +92,7 @@ def gotator_exec(recon_dir):
     else:
         print(f"[!] Gotator failed with error {result.stderr}")
     print("\n")
+
 
 def anew_exec(input_file, target_file):
     with open(input_file, "r") as f:
