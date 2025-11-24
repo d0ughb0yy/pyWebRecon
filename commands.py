@@ -91,58 +91,10 @@ def gotator_exec(recon_dir):
         print(f"[!] Gotator failed with error {result.stderr}")
     print("\n")
 
-def append_subfinder_output(input_file, target_file):
+def anew_exec(input_file, target_file):
     with open(input_file, "r") as f:
         result = subprocess.run(
             ["anew", target_file], stdin=f, stdout=subprocess.DEVNULL
         )
     if result.returncode != 0:
         print(f"Error: {result.stderr}")
-
-
-def append_gobuster_output(gobuster_file: str, all_subs_file: str):
-    '''Can be used to anew any clean line delimited URL file, used for crt.sh output'''
-    gobuster_path = Path(gobuster_file)
-    all_subs_path = Path(all_subs_file)
-
-    if not gobuster_path.exists():
-        print(f"[!] Gobuster file not found: {gobuster_file}")
-        return
-
-    existing = set()
-    if all_subs_path.exists():
-        with open(all_subs_path, "r", encoding="utf-8") as f:
-            existing = {line.strip() for line in f if line.strip()}
-
-    new_domains = []
-    with open(gobuster_path, "r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-
-            # Handle both formats
-            # sub.domain.com 1.2.3.4
-            # Found: sub.domain.dom 1.2.3.4
-            if " " in line:
-                domain = line.split()[0]
-            elif line.startswith("Found:"):
-                domain = line.split("Found:")[1].strip().split()[0]
-            else:
-                domain = line
-
-            domain = domain.lower().split("[")[0].rstrip(":").strip()
-
-            if domain and domain not in existing:
-                new_domains.append(domain)
-                existing.add(domain)
-
-        if new_domains:
-            with open(all_subs_path, "a", encoding="utf-8") as f:
-                for domain in new_domains:
-                    f.write(domain + "\n")
-            print(f"[+] Added {len(new_domains)} new domains from gobuster")
-        else:
-            print("[*] No new subdomains found in gobuster files")
-
-

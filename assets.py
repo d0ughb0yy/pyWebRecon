@@ -76,24 +76,24 @@ def subdomain_enumeration(target_domain, recon_dir, first_wordlist, second_wordl
     second_dnsx_thread.join()
     subfinder_thread.join()
 
-    append_subfinder_output(
+    anew_exec(
         f"{recon_dir}/domain-recon/subfinder_output.txt",
         f"{recon_dir}/domain-recon/all_subs.txt",
     )
-
-    append_gobuster_output(
-        f"{recon_dir}/domain-recon/gobuster_{first_wordlist[34 : len(first_wordlist) - 4]}_output.txt",
-        f"{recon_dir}/domain-recon/all_subs.txt",
-    )
-
-    append_gobuster_output(
-        f"gobuster_{second_wordlist[34:len(second_wordlist)-4]}_output.txt",
-        f"{recon_dir}/domain-recon/all_subs.txt",
-    )
     
-    append_subfinder_output( # Actually crtsh output but same file format
+    anew_exec( # Actually crtsh output but same file format
         f"{recon_dir}/domain-recon/crtsh_output.txt",
         f"{recon_dir}/domain-recon/all_subs.txt",
+    )
+
+    # Anew dnsx files
+    anew_exec(
+        f"{recon_dir}/domain-recon/dnsx_{first_wordlist[34 : len(first_wordlist) - 4]}_output.txt",
+        f"{recon_dir}/domain-recon/all_subs.txt",
+    )
+    anew_exec(
+        f"{recon_dir}/domain-recon/dnsx_{second_wordlist[34 : len(first_wordlist) - 4]}_output.txt",
+        f"{recon_dir}/domain-recon/all_subs.txt",        
     )
 
 
