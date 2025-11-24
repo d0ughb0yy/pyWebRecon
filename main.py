@@ -1,6 +1,7 @@
 from assets import subdomain_enumeration, subdomain_permutation, probe
 import os
 import sys
+from dotenv import load_dotenv
 
 print(
     r"""
@@ -31,9 +32,10 @@ if __name__ == "__main__":
         )
         sys.exit(1)
 
+    load_dotenv()
     target_domain = sys.argv[1]
-    first_wordlist = sys.argv[2]
-    second_wordlist = sys.argv[3]
+    first_wordlist = os.getenv("FIRST_WORDLIST")
+    second_wordlist = os.getenv("SECOND_WORDLIST")
 
     recon_dir = f"{target_domain}"
 
