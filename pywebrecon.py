@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-from assets import subdomain_enumeration, subdomain_permutation, probe
+from src.assets import *
 import os
-import sys
-from dotenv import load_dotenv
+import argparse
 
 print(
     r"""
@@ -24,15 +23,22 @@ print(
 
 if __name__ == "__main__":
 
-    if len(sys.argv) < 2 or sys.argv[1] in {"-h", "--help", "-help", "help"}:
-        print("Usage: python3 pywebrecon.py domain.com")
-        print("[!] Wordlists for dnsx should be added to a .env file under FIRST_WORDLIST= and SECOND_WORDLIST= [!]")
-        sys.exit(1)
+    parser = argparse.ArgumentParser(
+        description="Automation script for bug bounty hunters"
+    )
+    parser.add_argument("-d", "--domain", help="Target")
+    parser.add_argument(
+        "-fw", "--first-wordlist", help="First shuffledns wordlist path"
+    )
+    parser.add_argument(
+        "-sw", "--second-wordlist", help="Second shuffledns wordlist path"
+    )
 
-    load_dotenv()
-    target_domain = sys.argv[1]
-    first_wordlist = os.getenv("FIRST_WORDLIST")
-    second_wordlist = os.getenv("SECOND_WORDLIST")
+    args = parser.parse_args()
+
+    target_domain = args.domain
+    first_wordlist = args.first_wordlist
+    second_wordlist = args.second_wordlist
 
     recon_dir = f"{target_domain}"
 
@@ -42,7 +48,11 @@ if __name__ == "__main__":
         print(e, "\n")
         pass
 
-    subdomain_enumeration(target_domain, recon_dir, first_wordlist, second_wordlist)
+    subdomain_enumeration(target_domain, first_wordlist, second_wordlist)
     subdomain_permutation(recon_dir)
 
-    probe(f"{recon_dir}/domain-recon/")
+    subdomain_resolve(target_domain)
+
+    probe(target_domain)
+
+    cleanup(target_domain)
