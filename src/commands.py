@@ -74,7 +74,6 @@ def httpx_exec(target_domain):
         [
             "httpx",
             "-silent",
-            "-no-color",
             "-l",
             f"{target_domain}/domain-recon/resolved_subs.txt",
             "-fc",
