@@ -16,11 +16,11 @@ def dnsx_exec(subs_file, out_file_name, target):
     if result.returncode == 0:
         print(f"[!] dnsx resolve for {subs_file[len(target)+14:len(subs_file)-4]} complete")
     else:
-        print(f"[!] dnsx failed with error: {result.stderr + " | " + Exception}")
+        print(f"[!] dnsx failed with error: {result.stderr}")
     print("\n")
 
 def shuffledns_exec(target, wordlist, out_file_name):
-    resolvers = "/home/d0b0/Documents/resolvers.txt"
+    resolvers = "/home/d0b0/.config/shuffledns/resolvers.txt"
     result = subprocess.run(
         [
             "shuffledns",
@@ -43,7 +43,7 @@ def shuffledns_exec(target, wordlist, out_file_name):
     if result.returncode == 0:
         print(f"[!] shuffledns wordlist {wordlist[34:]} done")
     else:
-        print(f"[!] shuffledns failed with error: {result.stderr + " | " + Exception}")
+        print(f"[!] shuffledns failed with error: {result.stderr}")
     print("\n")
 
 
@@ -64,7 +64,7 @@ def subfinder_exec(target_domain):
     if result.returncode == 0:
         print("[+] Subfinder done")
     else:
-        print(f"[!] Subfinder failed with error: {result.stderr + " | " + Exception}")
+        print(f"[!] Subfinder failed with error: {result.stderr}")
     print("\n")
 
 
@@ -96,7 +96,7 @@ def httpx_exec(target_domain):
     if result.returncode == 0:
         print("[+] HTTPX done!")
     else:
-        print(f"[!] HTTPX failed with error: {result.stderr + " | " + Exception}")
+        print(f"[!] HTTPX failed with error: {result.stderr}")
 
 
 def gotator_exec(target_domain):
@@ -115,7 +115,7 @@ def gotator_exec(target_domain):
     if result.returncode == 0:
         print(f"[+] Gotator completed!")
     else:
-        print(f"[!] Gotator failed with error {result.stderr + " | " + Exception}")
+        print(f"[!] Gotator failed with error {result.stderr}")
     print("\n")
 
 

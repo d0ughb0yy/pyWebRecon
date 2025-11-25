@@ -1,6 +1,8 @@
 import threading
 from pathlib import Path
-from urllib.request import urlopen
+from urllib.request import urlopen, Request
+from urllib.error import URLError, HTTPError
+import socket
 import json
 import os
 from src.commands import *
@@ -8,21 +10,25 @@ from src.commands import *
 
 def crtsh_request(target_domain):
     print("[+] Fetching data from crt.sh...")
-    response = urlopen(f"https://crt.sh/?q={target_domain}&output=json")
+    target_domain = target_domain.lstrip('.').lower()
+    url = f"https://crt.sh/?q={target_domain}&output=json"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:131.0) Gecko/20100101 Firefox/131.0"
+    }
+    try:
+        req = Request(url, headers=headers)
+        with urlopen(req, timeout=30) as response:
+            data = response.read().decode('utf-8')
 
-    if TimeoutError:
-        print("[!] Timeout on crt.sh")
-        pass
-    else:
         print("[+] crt.sh request successful")
 
-        json_response = json.loads(response.read())
+        json_response = json.loads(data)
 
-        raw_output = []
+        subdomains = set()
 
         for item in json_response:
             for name in item.get("name_value", "").splitlines():
-                name = name.strip()
+                name = name.strip().lower()
 
                 if not name:
                     continue
@@ -33,14 +39,27 @@ def crtsh_request(target_domain):
                         cleaned = name[2:]  # removes "*."
                     else:
                         cleaned = name
-                    raw_output.append(cleaned)
+                    subdomains.add(cleaned)
 
-        target_subdomains = set(raw_output)
+        output_file = f"{target_domain}/domain-recon/crtsh_output.txt"
 
-        with open(f"{target_domain}/domain-recon/crtsh_output.txt", "a") as f:
-            for item in target_subdomains:
-                f.write(item + "\n")
+        with open(output_file, "w", encoding="utf-8") as f:
+            for subdomain in sorted(subdomains):
+                f.write(subdomain + "\n")
             f.close()
+        print(f"[+] Found {len(subdomains)} unique subdomains on crt.sh")
+    
+    except socket.timeout:
+        print(f"[!] Timeout on crt.sh after 30s")
+    except HTTPError as e:
+        print(f"[!] HTTP {e.code} - {e.reason}")
+    except URLError as e:
+        print(f"[!] Network nerror: {e.reason}")
+    except json.JSONDecodeError:
+        print("[!] Invalid JSON received")
+    except Exception as e:
+        print(f"[!] Unexpected error: {e}")
+
 
 
 def subdomain_enumeration(target_domain, first_wordlist, second_wordlist):
