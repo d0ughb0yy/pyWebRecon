@@ -9,6 +9,6 @@ The script requires some tools to be installed and available on the PATH:
 1. [Subfinder](https://github.com/projectdiscovery/subfinder)
 2. [HTTPX](https://github.com/projectdiscovery/httpx)
 3. [DNSX](https://github.com/projectdiscovery/dnsx)
-4. [EyeWitness](https://github.com/RedSiege/EyeWitness)
+4. [ShuffleDNS](https://github.com/projectdiscovery/shuffledns)
 5. [Gotator](https://github.com/Josue87/gotator)
 6. [Anew](https://github.com/tomnomnom/anew)
