@@ -1,84 +1,33 @@
 import threading
 from pathlib import Path
-from urllib.request import urlopen, Request
-from urllib.error import URLError, HTTPError
-import socket
-import json
 import os
 from src.commands import *
 
 
-def crtsh_request(target_domain):
-    print("[+] Fetching data from crt.sh...")
-    target_domain = target_domain.lstrip('.').lower()
-    url = f"https://crt.sh/?q={target_domain}&output=json"
-    headers = {
-        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:131.0) Gecko/20100101 Firefox/131.0"
-    }
-    try:
-        req = Request(url, headers=headers)
-        with urlopen(req, timeout=30) as response:
-            data = response.read().decode('utf-8')
-
-        print("[+] crt.sh request successful")
-
-        json_response = json.loads(data)
-
-        subdomains = set()
-
-        for item in json_response:
-            for name in item.get("name_value", "").splitlines():
-                name = name.strip().lower()
-
-                if not name:
-                    continue
-
-                if name.endswith(f".{target_domain}") or name == target_domain:
-                    # Remove leading "*." if present (for both *.sub.domain.com and *.domain.com)
-                    if name.startswith("*."):
-                        cleaned = name[2:]  # removes "*."
-                    else:
-                        cleaned = name
-                    subdomains.add(cleaned)
-
-        output_file = f"{target_domain}/domain-recon/crtsh_output.txt"
-
-        with open(output_file, "w", encoding="utf-8") as f:
-            for subdomain in sorted(subdomains):
-                f.write(subdomain + "\n")
-            f.close()
-        print(f"[+] Found {len(subdomains)} unique subdomains on crt.sh")
-    
-    except socket.timeout:
-        print(f"[!] Timeout on crt.sh after 30s")
-    except HTTPError as e:
-        print(f"[!] HTTP {e.code} - {e.reason}")
-    except URLError as e:
-        print(f"[!] Network nerror: {e.reason}")
-    except json.JSONDecodeError:
-        print("[!] Invalid JSON received")
-    except Exception as e:
-        print(f"[!] Unexpected error: {e}")
-
-
-
 def subdomain_enumeration(target_domain, first_wordlist, second_wordlist):
-    """Uses Subfinder and Puredns CLI tools to enumerate subdomains for a given target"""
+    """Uses subfinder, shuffledns, and crt.sh data to enumerate subdomains for a given target"""
 
+    # Fetch subdomains from crt.sh
     crtsh_request(target_domain)
 
+    # Start the subfinder thread
     subfinder_thread = threading.Thread(
         target=subfinder_exec, args=[target_domain], name="subfinder thread"
     )
     print(f"[+] Starting {subfinder_thread.name}")
     subfinder_thread.start()
 
+    # Fetch wordlist names
+    first_wordlist_name=Path(first_wordlist).stem
+    second_wordlist_name=Path(second_wordlist).stem
+
+    # Start shuffledns threads
     first_shuffledns_thread = threading.Thread(
         target=shuffledns_exec,
         args=(
             target_domain,
             first_wordlist,
-            f"shuffledns_{first_wordlist[34 : len(first_wordlist) - 4]}_output.txt",
+            f"shuffledns_{first_wordlist_name}_output.txt",
         ),
         name="first shuffledns wordlist",
     )
@@ -90,17 +39,20 @@ def subdomain_enumeration(target_domain, first_wordlist, second_wordlist):
         args=(
             target_domain,
             second_wordlist,
-            f"shuffledns_{second_wordlist[34:len(second_wordlist)-4]}_output.txt",
+            f"shuffledns_{second_wordlist_name}_output.txt",
         ),
         name="second shuffledns wordlist",
     )
     print(f"[+] Starting {second_shuffledns_thread.name}")
     second_shuffledns_thread.start()
 
+    # Make sure that the program does not progress until
+    # all threads are complete
     first_shuffledns_thread.join()
     second_shuffledns_thread.join()
     subfinder_thread.join()
 
+    # Use anew to build a text file for all gathered subdomains
     anew_exec(
         f"{target_domain}/domain-recon/subfinder_output.txt",
         f"{target_domain}/domain-recon/all_subs.txt",
@@ -128,6 +80,9 @@ def subdomain_permutation(target_domain):
 
 
 def subdomain_resolve(target_domain):
+    """Takes a target domain and resolves all gathered subdomains of the target"""
+
+    # Start resolving normal subdomains
     dnsx_normal_thread = threading.Thread(
         target=dnsx_exec,
         args=(
@@ -140,6 +95,7 @@ def subdomain_resolve(target_domain):
     print(f"Starting {dnsx_normal_thread.name}...")
     dnsx_normal_thread.start()
 
+    # Start resolving permutated domains
     dnsx_permutated_thread = threading.Thread(
         target=dnsx_exec,
         args=(
@@ -155,6 +111,7 @@ def subdomain_resolve(target_domain):
     dnsx_normal_thread.join()
     dnsx_permutated_thread.join()
 
+    # Add those that resolve to the group file
     anew_exec(
         f"{target_domain}/domain-recon/dnsx_resolved.txt",
         f"{target_domain}/domain-recon/resolved_subs.txt",
@@ -174,7 +131,7 @@ def delete_specified(name, target_domain):
     # Specify the directory (current directory by default)
     directory = Path(
         target_domain + "/domain-recon/"
-    )  # or Path("/path/to/your/folder")
+    )
 
     # Remove files using wildcard notation *_output.txt, subfinder_*, etc
     for file_path in directory.glob(name):

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from src.assets import *
+from src.commands import *
 import os
 import argparse
 
@@ -49,10 +50,8 @@ if __name__ == "__main__":
         pass
 
     subdomain_enumeration(target_domain, first_wordlist, second_wordlist)
-    subdomain_permutation(recon_dir)
-
+    gotator_exec(target_domain)
     subdomain_resolve(target_domain)
-
-    probe(target_domain)
+    httpx_exec(target_domain)
 
     cleanup(target_domain)

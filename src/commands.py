@@ -1,4 +1,8 @@
 import subprocess
+from urllib.request import urlopen, Request
+from urllib.error import URLError, HTTPError
+import socket
+import json
 
 def dnsx_exec(subs_file, out_file_name, target):
     result = subprocess.run(
@@ -36,12 +40,14 @@ def shuffledns_exec(target, wordlist, out_file_name):
             f"{target}/domain-recon/{out_file_name}",
             "-silent",
             "-nc",
+            "-t",
+            "1000"
         ],
         stdout=subprocess.DEVNULL,
         capture_output=False
     )
     if result.returncode == 0:
-        print(f"[!] shuffledns wordlist {wordlist[34:]} done")
+        print(f"[!] shuffledns wordlist {wordlist} done")
     else:
         print(f"[!] shuffledns failed with error: {result.stderr}")
     print("\n")
@@ -140,3 +146,55 @@ def anew_exec(input_file, target_file):
     
     except Exception as e:
         print(f"[!] An unexpected error occurred: {type(e).__name__}: {e}")
+
+def crtsh_request(target_domain):
+    print("[+] Fetching data from crt.sh...")
+    target_domain = target_domain.lstrip('.').lower()
+    url = f"https://crt.sh/?q={target_domain}&output=json"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:131.0) Gecko/20100101 Firefox/131.0"
+    }
+    try:
+        req = Request(url, headers=headers)
+        with urlopen(req, timeout=30) as response:
+            data = response.read().decode('utf-8')
+
+        print("[+] crt.sh request successful")
+
+        json_response = json.loads(data)
+
+        subdomains = set()
+
+        for item in json_response:
+            for name in item.get("name_value", "").splitlines():
+                name = name.strip().lower()
+
+                if not name:
+                    continue
+
+                if name.endswith(f".{target_domain}") or name == target_domain:
+                    # Remove leading "*." if present (for both *.sub.domain.com and *.domain.com)
+                    if name.startswith("*."):
+                        cleaned = name[2:]  # removes "*."
+                    else:
+                        cleaned = name
+                    subdomains.add(cleaned)
+
+        output_file = f"{target_domain}/domain-recon/crtsh_output.txt"
+
+        with open(output_file, "w", encoding="utf-8") as f:
+            for subdomain in sorted(subdomains):
+                f.write(subdomain + "\n")
+            f.close()
+        print(f"[+] Found {len(subdomains)} unique subdomains on crt.sh")
+    
+    except socket.timeout:
+        print(f"[!] Timeout on crt.sh after 30s")
+    except HTTPError as e:
+        print(f"[!] HTTP {e.code} - {e.reason}")
+    except URLError as e:
+        print(f"[!] Network nerror: {e.reason}")
+    except json.JSONDecodeError:
+        print("[!] Invalid JSON received")
+    except Exception as e:
+        print(f"[!] Unexpected error: {e}")
