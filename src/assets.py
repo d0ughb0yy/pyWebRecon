@@ -58,7 +58,7 @@ def subdomain_enumeration(target_domain, first_wordlist, second_wordlist):
         f"{target_domain}/domain-recon/all_subs.txt",
     )
 
-    anew_exec(  # Actually crtsh output but same file format
+    anew_exec(
         f"{target_domain}/domain-recon/crtsh_output.txt",
         f"{target_domain}/domain-recon/all_subs.txt",
     )
@@ -72,11 +72,6 @@ def subdomain_enumeration(target_domain, first_wordlist, second_wordlist):
         f"{target_domain}/domain-recon/shuffledns_{second_wordlist[34 : len(second_wordlist) - 4]}_output.txt",
         f"{target_domain}/domain-recon/all_subs.txt",
     )
-
-
-def subdomain_permutation(target_domain):
-    """Uses gotator to permutate subdomains"""
-    gotator_exec(target_domain)
 
 
 def subdomain_resolve(target_domain):
@@ -120,12 +115,6 @@ def subdomain_resolve(target_domain):
         f"{target_domain}/domain-recon/dnsx_permutated_resolved.txt",
         f"{target_domain}/domain-recon/resolved_subs.txt",
     )
-
-
-def probe(target_domain):
-    """Uses httpx to probe for live hosts"""
-    httpx_exec(target_domain)
-
 
 def delete_specified(name, target_domain):
     # Specify the directory (current directory by default)
