@@ -65,11 +65,11 @@ def subdomain_enumeration(target_domain, first_wordlist, second_wordlist):
 
     # Anew shuffledns files
     anew_exec(
-        f"{target_domain}/domain-recon/shuffledns_{first_wordlist[34 : len(first_wordlist) - 4]}_output.txt",
+        f"{target_domain}/domain-recon/shuffledns_{first_wordlist_name}_output.txt",
         f"{target_domain}/domain-recon/all_subs.txt",
     )
     anew_exec(
-        f"{target_domain}/domain-recon/shuffledns_{second_wordlist[34 : len(second_wordlist) - 4]}_output.txt",
+        f"{target_domain}/domain-recon/shuffledns_{second_wordlist_name}_output.txt",
         f"{target_domain}/domain-recon/all_subs.txt",
     )
 
