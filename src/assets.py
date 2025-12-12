@@ -5,7 +5,11 @@ from src.commands import *
 
 
 def subdomain_enumeration(target_domain, first_wordlist, second_wordlist):
-    """Uses subfinder, shuffledns, and crt.sh data to enumerate subdomains for a given target"""
+    """Uses subfinder, shuffledns, and crt.sh data to find subdomains for a given target"""
+
+    # Fetch wordlist names
+    first_wordlist_name = Path(first_wordlist).stem
+    second_wordlist_name = Path(second_wordlist).stem
 
     # Fetch subdomains from crt.sh
     crtsh_request(target_domain)
@@ -16,10 +20,6 @@ def subdomain_enumeration(target_domain, first_wordlist, second_wordlist):
     )
     print(f"[+] Starting {subfinder_thread.name}")
     subfinder_thread.start()
-
-    # Fetch wordlist names
-    first_wordlist_name=Path(first_wordlist).stem
-    second_wordlist_name=Path(second_wordlist).stem
 
     # Start shuffledns threads
     first_shuffledns_thread = threading.Thread(
@@ -46,11 +46,10 @@ def subdomain_enumeration(target_domain, first_wordlist, second_wordlist):
     print(f"[+] Starting {second_shuffledns_thread.name}")
     second_shuffledns_thread.start()
 
-    # Make sure that the program does not progress until
-    # all threads are complete
+    # Make sure that the program does not progress until all threads are complete
+    subfinder_thread.join()
     first_shuffledns_thread.join()
     second_shuffledns_thread.join()
-    subfinder_thread.join()
 
     # Use anew to build a text file for all gathered subdomains
     anew_exec(
@@ -75,7 +74,7 @@ def subdomain_enumeration(target_domain, first_wordlist, second_wordlist):
 
 
 def subdomain_resolve(target_domain):
-    """Takes a target domain and resolves all gathered subdomains of the target"""
+    """Uses dnsx to try and resolve all gathered and permutated subdomains"""
 
     # Start resolving normal subdomains
     dnsx_normal_thread = threading.Thread(
@@ -116,11 +115,10 @@ def subdomain_resolve(target_domain):
         f"{target_domain}/domain-recon/resolved_subs.txt",
     )
 
+
 def delete_specified(name, target_domain):
     # Specify the directory (current directory by default)
-    directory = Path(
-        target_domain + "/domain-recon/"
-    )
+    directory = Path(target_domain + "/domain-recon/")
 
     # Remove files using wildcard notation *_output.txt, subfinder_*, etc
     for file_path in directory.glob(name):
