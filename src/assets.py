@@ -99,7 +99,7 @@ def subdomain_resolve(target_domain):
         ),
         name="dnsx permutated thread",
     )
-    print(f"Starting {dnsx_permutated_thread.name}...")
+    print(f"[+] Starting {dnsx_permutated_thread.name}")
     dnsx_permutated_thread.start()
 
     dnsx_normal_thread.join()
@@ -125,9 +125,9 @@ def delete_specified(name, target_domain):
         if file_path.is_file():  # extra safety
             try:
                 file_path.unlink()
-                print(f"Deleted: {file_path}")
+                print(f"[+] Deleted: {file_path}")
             except Exception as e:
-                print(f"Error deleting {file_path}: {e}")
+                print(f"[!] Error deleting {file_path}: {e}")
 
 
 def cleanup(target_domain):

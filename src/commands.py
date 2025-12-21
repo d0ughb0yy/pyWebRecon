@@ -21,7 +21,6 @@ def dnsx_exec(subs_file, out_file_name, target):
         print(f"[!] dnsx resolve for {subs_file[len(target)+14:len(subs_file)-4]} complete")
     else:
         print(f"[!] dnsx failed with error: {result.stderr}")
-    print("\n")
 
 def shuffledns_exec(target, wordlist, out_file_name):
     resolvers = "/home/d0b0/.config/shuffledns/resolvers.txt"
@@ -50,8 +49,6 @@ def shuffledns_exec(target, wordlist, out_file_name):
         print(f"[!] shuffledns wordlist {wordlist} done")
     else:
         print(f"[!] shuffledns failed with error: {result.stderr}")
-    print("\n")
-
 
 def subfinder_exec(target_domain):
     result = subprocess.run(
@@ -68,11 +65,9 @@ def subfinder_exec(target_domain):
     )
 
     if result.returncode == 0:
-        print("[+] Subfinder done")
+        print("[!] Subfinder done")
     else:
         print(f"[!] Subfinder failed with error: {result.stderr}")
-    print("\n")
-
 
 def httpx_exec(target_domain):
     print("[+] Starting HTTPX...")
@@ -99,10 +94,9 @@ def httpx_exec(target_domain):
         stdout=subprocess.DEVNULL,
     )
     if result.returncode == 0:
-        print("[+] HTTPX done!")
+        print("[!] HTTPX done!")
     else:
         print(f"[!] HTTPX failed with error: {result.stderr}")
-
 
 def gotator_exec(target_domain):
 
@@ -118,11 +112,9 @@ def gotator_exec(target_domain):
             check=False,
         )
     if result.returncode == 0:
-        print(f"[+] Gotator completed!")
+        print(f"[!] Gotator completed!")
     else:
         print(f"[!] Gotator failed with error {result.stderr}")
-    print("\n")
-
 
 def anew_exec(input_file, target_file):
     try:
@@ -131,7 +123,7 @@ def anew_exec(input_file, target_file):
                 ["anew", target_file],
                 stdin=f,
                 stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL  # Optional: suppress anew errors too
+                stderr=subprocess.STDOUT
             )
         # If subprocess fails (e.g. 'anew' command not found), you can check result.returncode if needed
         if result.returncode != 0:
