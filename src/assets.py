@@ -84,9 +84,9 @@ def subdomain_resolve(target_domain):
             "dnsx_resolved.txt",
             target_domain,
         ),
-        name="dnsx normal thread",
+        name="dnsx regular thread",
     )
-    print(f"Starting {dnsx_normal_thread.name}...")
+    print(f"[+] Starting {dnsx_normal_thread.name}")
     dnsx_normal_thread.start()
 
     # Start resolving permutated domains
