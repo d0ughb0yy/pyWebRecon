@@ -3,6 +3,7 @@ from urllib.request import urlopen, Request
 from urllib.error import URLError, HTTPError
 import socket
 import json
+import time
 
 def dnsx_exec(subs_file, out_file_name, target):
     result = subprocess.run(
@@ -98,23 +99,27 @@ def httpx_exec(target_domain):
     else:
         print(f"[!] HTTPX failed with error: {result.stderr}")
 
-def gotator_exec(target_domain):
+def alterx_exec(target_domain):
 
     input_file = f"{target_domain}/domain-recon/all_subs.txt"
     output_file = f"{target_domain}/domain-recon/permutated_subs.txt"
 
-    with open(output_file, "w") as outfile:
-        result = subprocess.run(
-            ["gotator", "-sub", input_file, "-md", "-silent"],
-            stdout=outfile,
-            stderr=subprocess.DEVNULL,
-            text=True,
-            check=False,
-        )
+    print("[+] Starting AlterX...")
+    result = subprocess.run(
+        [
+            "alterx",
+            "-silent",
+            "-l",
+            f"{input_file}",
+            "-o",
+            f"{output_file}",
+        ],
+        stdout=subprocess.DEVNULL,
+    )
     if result.returncode == 0:
-        print(f"[!] Gotator completed!")
+        print("[!] AlterX done!")
     else:
-        print(f"[!] Gotator failed with error {result.stderr}")
+        print(f"[!] AlterX failed with error: {result.stderr}")
 
 def anew_exec(input_file, target_file):
     try:
@@ -139,54 +144,61 @@ def anew_exec(input_file, target_file):
     except Exception as e:
         print(f"[!] An unexpected error occurred: {type(e).__name__}: {e}")
 
-def crtsh_request(target_domain):
+def crtsh_request(target_domain, max_retries=5):
     print("[+] Fetching data from crt.sh...")
     target_domain = target_domain.lstrip('.').lower()
     url = f"https://crt.sh/?q={target_domain}&output=json"
     headers = {
         "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:131.0) Gecko/20100101 Firefox/131.0"
     }
-    try:
-        req = Request(url, headers=headers)
-        with urlopen(req, timeout=30) as response:
-            data = response.read().decode('utf-8')
-
-        print("[+] crt.sh request successful")
-
-        json_response = json.loads(data)
-
-        subdomains = set()
-
-        for item in json_response:
-            for name in item.get("name_value", "").splitlines():
-                name = name.strip().lower()
-
-                if not name:
-                    continue
-
-                if name.endswith(f".{target_domain}") or name == target_domain:
-                    # Remove leading "*." if present (for both *.sub.domain.com and *.domain.com)
-                    if name.startswith("*."):
-                        cleaned = name[2:]  # removes "*."
-                    else:
-                        cleaned = name
-                    subdomains.add(cleaned)
-
-        output_file = f"{target_domain}/domain-recon/crtsh_output.txt"
-
-        with open(output_file, "w", encoding="utf-8") as f:
-            for subdomain in sorted(subdomains):
-                f.write(subdomain + "\n")
-            f.close()
-        print(f"[+] Found {len(subdomains)} unique subdomains on crt.sh")
     
-    except socket.timeout:
-        print(f"[!] Timeout on crt.sh after 30s")
-    except HTTPError as e:
-        print(f"[!] HTTP {e.code} - {e.reason}")
-    except URLError as e:
-        print(f"[!] Network nerror: {e.reason}")
-    except json.JSONDecodeError:
-        print("[!] Invalid JSON received")
-    except Exception as e:
-        print(f"[!] Unexpected error: {e}")
+    for attempt in range(1, max_retries + 1):
+        try:
+            if attempt > 1:
+                print(f"[*] Retry attempt {attempt}/{max_retries}...")
+            
+            req = Request(url, headers=headers)
+            with urlopen(req, timeout=30) as response:
+                data = response.read().decode('utf-8')
+            
+            print("[+] crt.sh request successful")
+            json_response = json.loads(data)
+            subdomains = set()
+            
+            for item in json_response:
+                for name in item.get("name_value", "").splitlines():
+                    name = name.strip().lower()
+                    if not name:
+                        continue
+                    if name.endswith(f".{target_domain}") or name == target_domain:
+                        # Remove leading "*." if present (for both *.sub.domain.com and *.domain.com)
+                        if name.startswith("*."):
+                            cleaned = name[2:]  # removes "*."
+                        else:
+                            cleaned = name
+                        subdomains.add(cleaned)
+            
+            output_file = f"{target_domain}/domain-recon/crtsh_output.txt"
+            with open(output_file, "w", encoding="utf-8") as f:
+                for subdomain in sorted(subdomains):
+                    f.write(subdomain + "\n")
+            
+            print(f"[+] Found {len(subdomains)} unique subdomains on crt.sh")
+            return  # Success - exit the function
+        
+        except socket.timeout:
+            print(f"[!] Timeout on crt.sh after 30s (attempt {attempt}/{max_retries})")
+        except HTTPError as e:
+            print(f"[!] HTTP {e.code} - {e.reason} (attempt {attempt}/{max_retries})")
+        except URLError as e:
+            print(f"[!] Network error: {e.reason} (attempt {attempt}/{max_retries})")
+        except json.JSONDecodeError:
+            print(f"[!] Invalid JSON received (attempt {attempt}/{max_retries})")
+        except Exception as e:
+            print(f"[!] Unexpected error: {e} (attempt {attempt}/{max_retries})")
+        
+        # If this wasn't the last attempt, wait a bit before retrying
+        if attempt < max_retries:
+            time.sleep(2)  # Wait 2 seconds between retries
+    
+    print(f"[!] Failed to fetch data from crt.sh after {max_retries} attempts")

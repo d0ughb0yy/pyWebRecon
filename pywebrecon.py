@@ -50,7 +50,7 @@ if __name__ == "__main__":
         pass
 
     subdomain_enumeration(target_domain, first_wordlist, second_wordlist)
-    gotator_exec(target_domain)
+    alterx_exec(target_domain)
     subdomain_resolve(target_domain)
     httpx_exec(target_domain)
 
