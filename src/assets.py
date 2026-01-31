@@ -5,7 +5,10 @@ from src.commands import *
 
 
 def subdomain_enumeration(target_domain, first_wordlist, second_wordlist):
-    """Uses subfinder, shuffledns, and crt.sh data to find subdomains for a given target"""
+    """
+    Uses subfinder_exec, shuffledns_exec, and crtsh_request functions to
+    gather subdomains for a given target
+    """
 
     # Fetch wordlist names
     first_wordlist_name = Path(first_wordlist).stem
@@ -18,7 +21,7 @@ def subdomain_enumeration(target_domain, first_wordlist, second_wordlist):
     subfinder_thread = threading.Thread(
         target=subfinder_exec, args=[target_domain], name="subfinder thread"
     )
-    print(f"[+] Starting {subfinder_thread.name}")
+    print(f"[+] Starting {subfinder_thread.name}.")
     subfinder_thread.start()
 
     # Start shuffledns threads
@@ -31,7 +34,7 @@ def subdomain_enumeration(target_domain, first_wordlist, second_wordlist):
         ),
         name="first shuffledns wordlist",
     )
-    print(f"[+] Starting {first_shuffledns_thread.name}")
+    print(f"[+] Starting {first_shuffledns_thread.name}.")
     first_shuffledns_thread.start()
 
     second_shuffledns_thread = threading.Thread(
@@ -43,7 +46,7 @@ def subdomain_enumeration(target_domain, first_wordlist, second_wordlist):
         ),
         name="second shuffledns wordlist",
     )
-    print(f"[+] Starting {second_shuffledns_thread.name}")
+    print(f"[+] Starting {second_shuffledns_thread.name}.")
     second_shuffledns_thread.start()
 
     # Make sure that the program does not progress until all threads are complete
@@ -74,45 +77,44 @@ def subdomain_enumeration(target_domain, first_wordlist, second_wordlist):
 
 
 def subdomain_resolve(target_domain):
-    """Uses dnsx to try and resolve all gathered and permutated subdomains"""
+    """
+    Uses dnsx_exec to try and resolve all gathered subdomains
+    and httpx to probe resolved hosts
+    """
 
-    # Start resolving normal subdomains
-    dnsx_normal_thread = threading.Thread(
-        target=dnsx_exec,
-        args=(
-            f"{target_domain}/domain-recon/all_subs.txt",
-            "dnsx_resolved.txt",
-            target_domain,
-        ),
-        name="dnsx regular thread",
-    )
-    print(f"[+] Starting {dnsx_normal_thread.name}")
-    dnsx_normal_thread.start()
+    subdomains_file = "all_subs.txt"
+    out_file = "dnsx_all_resolved.txt"
+
+    # Start resolving gathered subdomains
+    dnsx_exec(subdomains_file, out_file, target_domain)
+
+    # Use httpx to probe and scan the resolved subdomains
+    httpx_exec(target_domain, f"{target_domain}/domain-recon/{out_file}")
+
+
+def subdomain_permutation(target_domain):
+    """
+    Uses alterx_exec and dnsx_exec to permutate and resolve if possible.
+    """
+    permutated_subs_file = "permutated_subs.txt"
+    dnsx_out_file = "dnsx_permutated_resolved.txt"
+
+    # Execute AlterX
+    alterx_exec(target_domain)
 
     # Start resolving permutated domains
-    dnsx_permutated_thread = threading.Thread(
-        target=dnsx_exec,
-        args=(
-            f"{target_domain}/domain-recon/permutated_subs.txt",
-            "dnsx_permutated_resolved.txt",
-            target_domain,
-        ),
-        name="dnsx permutated thread",
-    )
-    print(f"[+] Starting {dnsx_permutated_thread.name}")
-    dnsx_permutated_thread.start()
+    dnsx_exec(permutated_subs_file, dnsx_out_file, target_domain)
 
-    dnsx_normal_thread.join()
-    dnsx_permutated_thread.join()
+    httpx_exec(target_domain, f"{target_domain}/domain-recon/{dnsx_out_file}")
 
-    # Add those that resolve to the group file
     anew_exec(
-        f"{target_domain}/domain-recon/dnsx_resolved.txt",
-        f"{target_domain}/domain-recon/resolved_subs.txt",
+        f"{target_domain}/domain-recon/{dnsx_out_file}",
+        f"{target_domain}/domain-recon/dnsx_all_resolved.txt"
     )
+
     anew_exec(
-        f"{target_domain}/domain-recon/dnsx_permutated_resolved.txt",
-        f"{target_domain}/domain-recon/resolved_subs.txt",
+        f"{target_domain}/domain-recon/httpx_{Path(dnsx_out_file).stem}_scan.txt",
+        f"{target_domain}/domain-recon/httpx_all_resolved_scan.txt",
     )
 
 
@@ -132,5 +134,5 @@ def delete_specified(name, target_domain):
 
 def cleanup(target_domain):
     delete_specified("*_output.txt", target_domain)
-    delete_specified("*_resolved.txt", target_domain)
+    delete_specified("*_permutated_*", target_domain)
     os.remove(f"{target_domain}/domain-recon/permutated_subs.txt")

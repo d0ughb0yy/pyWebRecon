@@ -10,5 +10,5 @@ The script requires some tools to be installed and available on the PATH:
 2. [HTTPX](https://github.com/projectdiscovery/httpx)
 3. [DNSX](https://github.com/projectdiscovery/dnsx)
 4. [ShuffleDNS](https://github.com/projectdiscovery/shuffledns)
-5. [Gotator](https://github.com/Josue87/gotator)
+5. [AlterX](https://github.com/projectdiscovery/alterx)
 6. [Anew](https://github.com/tomnomnom/anew)

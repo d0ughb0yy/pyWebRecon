@@ -1,16 +1,18 @@
 import subprocess
 from urllib.request import urlopen, Request
 from urllib.error import URLError, HTTPError
+from pathlib import Path
 import socket
 import json
 import time
 
 def dnsx_exec(subs_file, out_file_name, target):
+    print(f"[+] Started resolving {subs_file}.")
     result = subprocess.run(
         [
             "dnsx",
             "-l",
-            f"{subs_file}",
+            f"{target}/domain-recon/{subs_file}",
             "-o",
             f"{target}/domain-recon/{out_file_name}",
             "-silent",
@@ -19,9 +21,9 @@ def dnsx_exec(subs_file, out_file_name, target):
         stdout=subprocess.DEVNULL,
     )
     if result.returncode == 0:
-        print(f"[!] dnsx resolve for {subs_file[len(target)+14:len(subs_file)-4]} complete")
+        print(f"[!] Resolving of {subs_file} complete.")
     else:
-        print(f"[!] dnsx failed with error: {result.stderr}")
+        print(f"[!] dnsx failed with error: {result.stderr}.")
 
 def shuffledns_exec(target, wordlist, out_file_name):
     resolvers = "/home/d0b0/.config/shuffledns/resolvers.txt"
@@ -70,14 +72,15 @@ def subfinder_exec(target_domain):
     else:
         print(f"[!] Subfinder failed with error: {result.stderr}")
 
-def httpx_exec(target_domain):
+def httpx_exec(target_domain, subs_file):
     print("[+] Starting HTTPX...")
+    out_file_name=Path(subs_file).stem
     result = subprocess.run(
         [
             "httpx",
             "-silent",
             "-l",
-            f"{target_domain}/domain-recon/resolved_subs.txt",
+            subs_file,
             "-fc",
             "404",
             "-sc",
@@ -90,7 +93,7 @@ def httpx_exec(target_domain):
             "-p",
             "80,443,8080,8000,8443",
             "-o",
-            f"{target_domain}/domain-recon/httpx_full_scan.txt",
+            f"{target_domain}/domain-recon/httpx_{out_file_name}_scan.txt",
         ],
         stdout=subprocess.DEVNULL,
     )
@@ -100,15 +103,15 @@ def httpx_exec(target_domain):
         print(f"[!] HTTPX failed with error: {result.stderr}")
 
 def alterx_exec(target_domain):
-
-    input_file = f"{target_domain}/domain-recon/all_subs.txt"
-    output_file = f"{target_domain}/domain-recon/permutated_subs.txt"
-
     print("[+] Starting AlterX...")
+
+    input_file = f"{target_domain}/domain-recon/resolved_subs.txt"
+    output_file = f"{target_domain}/domain-recon/permutated_subs.txt"
     result = subprocess.run(
         [
             "alterx",
             "-silent",
+            "-enrich",
             "-l",
             f"{input_file}",
             "-o",
@@ -130,7 +133,7 @@ def anew_exec(input_file, target_file):
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.STDOUT
             )
-        # If subprocess fails (e.g. 'anew' command not found), you can check result.returncode if needed
+        # If subprocess fails (e.g. 'anew' command not found), check result.returncode
         if result.returncode != 0:
             print(f"[!] 'anew' command failed with return code {result.returncode}")
         

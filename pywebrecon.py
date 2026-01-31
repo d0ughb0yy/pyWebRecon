@@ -50,8 +50,7 @@ if __name__ == "__main__":
         pass
 
     subdomain_enumeration(target_domain, first_wordlist, second_wordlist)
-    alterx_exec(target_domain)
-    subdomain_resolve(target_domain)
-    httpx_exec(target_domain)
+    subdomain_resolve(target_domain)    
+    subdomain_permutation(target_domain)
 
     cleanup(target_domain)
