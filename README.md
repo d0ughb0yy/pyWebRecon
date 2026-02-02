@@ -1,7 +1,7 @@
 # pyWebRecon
 
 ## Summary
-pyWebRecon is a Python automation script for bug bounty hunters. The script utilizes tools like subfinder, httpx, EyeWitness, dnsx to gather data about a given domain.
+pyWebRecon is a Python automation script for bug bounty hunters. The script utilizes tools like subfinder, httpx, shuffledns, dnsx and alterx to gather data about a given domain.
 It supports brute forcing of two wordlists at once using multiple python threads.
 
 ## Required tools
