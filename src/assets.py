@@ -6,8 +6,9 @@ from src.commands import *
 
 def subdomain_enumeration(target_domain, first_wordlist, second_wordlist):
     """
-    Uses subfinder_exec, shuffledns_exec, and crtsh_request functions to
-    gather subdomains for a given target
+    Passive and active gathering workflow,
+    uses crtsh_request, subfinder_exec and shuffledns_exec,
+    in the end it uses anew_exec to gather all data into a single file. 
     """
 
     # Fetch wordlist names
@@ -49,7 +50,7 @@ def subdomain_enumeration(target_domain, first_wordlist, second_wordlist):
     print(f"[+] Starting {second_shuffledns_thread.name}.")
     second_shuffledns_thread.start()
 
-    # Make sure that the program does not progress until all threads are complete
+    # Wait for all threads to finish
     subfinder_thread.join()
     first_shuffledns_thread.join()
     second_shuffledns_thread.join()
@@ -90,11 +91,15 @@ def subdomain_resolve(target_domain):
 
     # Use httpx to probe and scan the resolved subdomains
     httpx_exec(target_domain, f"{target_domain}/domain-recon/{out_file}")
+    anew_exec(
+        f"{target_domain}/domain-recon/httpx_{out_file}_scan.txt",
+        f"{target_domain}/domain-recon/httpx_all_scan.txt"
+    )
 
 
 def subdomain_permutation(target_domain):
     """
-    Uses alterx_exec and dnsx_exec to permutate and resolve if possible.
+    Uses alterx_exec and dnsx_exec to permutate and resolve.
     """
     permutated_subs_file = "permutated_subs.txt"
     dnsx_out_file = "dnsx_permutated_resolved.txt"
