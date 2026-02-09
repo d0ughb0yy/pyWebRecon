@@ -92,8 +92,8 @@ def subdomain_resolve(target_domain):
     # Use httpx to probe and scan the resolved subdomains
     httpx_exec(target_domain, f"{target_domain}/domain-recon/{out_file}")
     anew_exec(
-        f"{target_domain}/domain-recon/httpx_{out_file}_scan.txt",
-        f"{target_domain}/domain-recon/httpx_all_scan.txt"
+        f"{target_domain}/domain-recon/httpx_{Path(out_file).stem}_scan.txt",
+        f"{target_domain}/domain-recon/httpx_all_subs_scan.txt"
     )
 
 
@@ -101,8 +101,8 @@ def subdomain_permutation(target_domain):
     """
     Uses alterx_exec and dnsx_exec to permutate and resolve.
     """
-    permutated_subs_file = "permutated_subs.txt"
-    dnsx_out_file = "dnsx_permutated_resolved.txt"
+    permutated_subs_file = "permutated_subs_output.txt"
+    dnsx_out_file = "dnsx_permutated_resolved_output.txt"
 
     # Execute AlterX
     alterx_exec(target_domain)
@@ -119,7 +119,7 @@ def subdomain_permutation(target_domain):
 
     anew_exec(
         f"{target_domain}/domain-recon/httpx_{Path(dnsx_out_file).stem}_scan.txt",
-        f"{target_domain}/domain-recon/httpx_all_resolved_scan.txt",
+        f"{target_domain}/domain-recon/httpx_all_subs_scan.txt",
     )
 
 

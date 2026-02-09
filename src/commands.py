@@ -49,7 +49,7 @@ def shuffledns_exec(target, wordlist, out_file_name):
         capture_output=False
     )
     if result.returncode == 0:
-        print(f"[!] shuffledns wordlist {wordlist} done")
+        print(f"[!] shuffledns wordlist {Path(wordlist).stem} done")
     else:
         print(f"[!] shuffledns failed with error: {result.stderr}")
 
@@ -105,8 +105,8 @@ def httpx_exec(target_domain, subs_file):
 def alterx_exec(target_domain):
     print("[+] Starting AlterX...")
 
-    input_file = f"{target_domain}/domain-recon/resolved_subs.txt"
-    output_file = f"{target_domain}/domain-recon/permutated_subs.txt"
+    input_file = f"{target_domain}/domain-recon/dnsx_all_resolved.txt"
+    output_file = f"{target_domain}/domain-recon/permutated_subs_output.txt"
     result = subprocess.run(
         [
             "alterx",
