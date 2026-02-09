@@ -140,4 +140,3 @@ def delete_specified(name, target_domain):
 def cleanup(target_domain):
     delete_specified("*_output.txt", target_domain)
     delete_specified("*_permutated_*", target_domain)
-    os.remove(f"{target_domain}/domain-recon/permutated_subs.txt")
