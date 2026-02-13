@@ -1,14 +1,125 @@
 # pyWebRecon
 
-## Summary
-pyWebRecon is a Python automation script for bug bounty hunters. The script utilizes tools like subfinder, httpx, shuffledns, dnsx and alterx to gather data about a given domain.
-It supports brute forcing of two wordlists at once using multiple python threads.
+A Python-based subdomain reconnaissance automation framework designed for bug bounty hunting and security assessments. Built to demonstrate concurrent programming, system integration, and CLI UX design patterns.
 
-## Required tools
-The script requires some tools to be installed and available on the PATH:
-1. [Subfinder](https://github.com/projectdiscovery/subfinder)
-2. [HTTPX](https://github.com/projectdiscovery/httpx)
-3. [DNSX](https://github.com/projectdiscovery/dnsx)
-4. [ShuffleDNS](https://github.com/projectdiscovery/shuffledns)
-5. [AlterX](https://github.com/projectdiscovery/alterx)
-6. [Anew](https://github.com/tomnomnom/anew)
+## What It Does
+
+pyWebRecon automates the subdomain discovery process by orchestrating multiple industry-standard security tools into a single, cohesive pipeline. Instead of running each tool manually and stitching results together, this framework handles the entire workflow—from passive enumeration to active scanning—in one command.
+
+## Key Features
+
+**Multi-Tool Orchestration**
+- Integrates 6+ security tools (subfinder, httpx, shuffledns, dnsx, alterx, bbot, crt.sh API)
+- Handles tool dependencies and execution order automatically
+- Intelligent error handling with per-tool status tracking
+
+**Concurrent Execution**
+- Multi-threaded tool execution for performance
+- Live status monitoring with Rich terminal tables
+- Real-time progress updates with emoji indicators and timestamps
+
+**Developer-Friendly UX**
+- Clean, colorful terminal output using Rich library
+- Visual status table showing pending/running/completed/failed states
+- Detailed error reporting without cluttering successful runs
+
+**Smart Cleanup**
+- Automatically removes intermediate files
+- Preserves only consolidated results (resolved domains + HTTP probe data)
+- Maintains clean output directories
+
+## Installation
+
+### Prerequisites
+```bash
+# External tools (install via package manager or GitHub releases)
+subfinder      # Subdomain discovery
+httpx          # HTTP probing
+shuffledns     # DNS bruteforce
+dnsx           # DNS resolution
+alterx         # Subdomain permutation
+anew           # File appending utility
+bbot           # Comprehensive subdomain enumeration
+```
+
+### Python Dependencies
+```bash
+pip install -r requirements.txt
+```
+
+*Only requirement: `rich>=13.0.0`*
+
+## Usage
+
+```bash
+python3 pywebrecon.py -d <target-domain> \
+  -fw <wordlist1> \
+  -sw <wordlist2>
+```
+
+### Example
+```bash
+python3 pywebrecon.py \
+  -d example.com \
+  -fw /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt \
+  -sw /usr/share/seclists/Discovery/DNS/subdomains-top1million-20000.txt
+```
+
+## Workflow Pipeline
+
+The framework executes reconnaissance in **4 sequential stages**, with concurrent tool execution within each stage:
+
+### 1. Subdomain Enumeration (Concurrent)
+| Tool | Purpose |
+|------|---------|
+| **crt.sh** | Certificate transparency logs |
+| **subfinder** | Passive subdomain discovery |
+| **bbot** | Multi-source passive enumeration |
+| **shuffledns** (×2) | DNS bruteforce with dual wordlists |
+
+### 2. Subdomain Resolution
+- Resolves all discovered subdomains using **dnsx**
+- Filters out unresolvable domains
+
+### 3. Permutation & Expansion
+- Generates subdomain variations with **alterx**
+- Resolves permutations and appends valid ones to results
+
+### 4. HTTP Probing
+- Probes all resolved domains with **httpx**
+- Captures status codes, redirects, server headers, titles, and CDN info
+
+## Output
+
+After execution, you'll find two files in `{domain}/domain-recon/`:
+
+| File | Contents |
+|------|----------|
+| `dnsx_all_resolved.txt` | All resolved subdomains (one per line) |
+| `httpx_dnsx_all_resolved_scan.txt` | HTTP probe results with metadata |
+
+Intermediate files are automatically cleaned up.
+
+## Technical Highlights
+
+**Built With:**
+- Python 3.8+ (type hints, pathlib, threading)
+- [Rich](https://github.com/Textualize/rich) for terminal UI
+- Subprocess management for external tool integration
+
+**Key Implementation Details:**
+- **Live Status Table**: Uses Rich's `Live` display with shared `Text` objects for thread-safe updates
+- **Error Resilience**: Tools raise exceptions on failure; caught and displayed without crashing pipeline
+- **Memory Efficient**: Streams tool outputs directly to files, minimal in-memory data storage
+- **Rate Limiting**: httpx configured with `-rl 50` to be respectful to target infrastructure
+
+## Why This Project?
+
+I built pyWebRecon to solve a problem for myself: manually running and correlating results from multiple subdomain tools is tedious and error-prone. This framework demonstrates:
+
+1. **Systems Programming**: Integrating external CLI tools into Python applications
+2. **Concurrent Design**: Managing shared state across threads safely
+3. **User Experience**: Making command-line tools feel polished and professional
+4. **Security Domain Knowledge**: Understanding the bug bounty reconnaissance workflow
+
+It's designed to be **hackable**, each stage is modular, so adding new tools or changing the workflow is straightforward.

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from src.assets import *
 from src.commands import *
+from src.output import info
 import os
 import argparse
 
@@ -36,4 +37,8 @@ if __name__ == "__main__":
     subdomain_enumeration(target_domain, first_wordlist, second_wordlist)
     subdomain_resolve(target_domain)
     subdomain_permutation(target_domain)
+    final_httpx_scan(target_domain)
+
+    # Cleanup intermediate files
     cleanup(target_domain)
+    info(f"Scan complete. Results saved to {target_domain}/domain-recon/")

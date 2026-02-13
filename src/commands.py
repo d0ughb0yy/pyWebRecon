@@ -4,80 +4,130 @@ from urllib.error import URLError, HTTPError
 from pathlib import Path
 import json
 import time
+from src.output import info, success, warning, error
 
 def run_tool(cmd, success_msg, error_msg):
     """Helper to run subprocess commands with consistent error handling."""
     result = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
-    print(success_msg if result.returncode == 0 else f"[!] {error_msg}: {result.stderr.decode()}")
+    if result.returncode == 0:
+        success(success_msg)
+    else:
+        error(f"{error_msg}: {result.stderr.decode()}")
     return result.returncode == 0
 
 def dnsx_exec(subs_file, out_file_name, target):
-    print(f"[+] Started resolving {subs_file}.")
-    run_tool(
-        ["dnsx", "-l", f"{target}/domain-recon/{subs_file}", "-o", f"{target}/domain-recon/{out_file_name}", "-silent", "-nc"],
-        f"[!] Resolving of {subs_file} complete.",
-        "dnsx failed"
+    """Resolve subdomains with dnsx."""
+    output_file = f"{target}/domain-recon/{out_file_name}"
+    result = subprocess.run(
+        ["dnsx", "-l", f"{target}/domain-recon/{subs_file}", "-o", output_file, "-silent", "-nc"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE
     )
+    if result.returncode != 0:
+        raise Exception(f"dnsx failed: {result.stderr.decode()}")
 
 def shuffledns_exec(target, wordlist, out_file_name):
+    """Run shuffledns DNS bruteforce."""
     resolvers = "/home/d0b0/.config/shuffledns/resolvers.txt"
-    run_tool(
+    result = subprocess.run(
         ["shuffledns", "-d", target, "-w", wordlist, "-r", resolvers, "-mode", "bruteforce",
          "-o", f"{target}/domain-recon/{out_file_name}", "-silent", "-nc", "-t", "1000"],
-        f"[!] shuffledns wordlist {Path(wordlist).stem} done",
-        "shuffledns failed"
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE
     )
+    if result.returncode != 0:
+        raise Exception(f"shuffledns failed: {result.stderr.decode()}")
 
 def subfinder_exec(target_domain):
-    run_tool(
+    """Run subfinder subdomain discovery."""
+    result = subprocess.run(
         ["subfinder", "-d", target_domain, "-all", "-silent", "-o", f"{target_domain}/domain-recon/subfinder_output.txt"],
-        "[!] Subfinder done",
-        "Subfinder failed"
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE
     )
+    if result.returncode != 0:
+        raise Exception(f"subfinder failed: {result.stderr.decode()}")
 
 def httpx_exec(target_domain, subs_file):
-    print("[+] Starting HTTPX...")
+    """Probe subdomains with httpx."""
     out_file_name = Path(subs_file).stem
-    run_tool(
+    output_file = f"{target_domain}/domain-recon/httpx_{out_file_name}_scan.txt"
+    result = subprocess.run(
         ["httpx", "-silent", "-l", subs_file, "-fc", "404", "-sc", "-location", "-server", "-cdn", "-title",
-         "-rl", "50", "-p", "80,443,8080,8000,8443", "-o", f"{target_domain}/domain-recon/httpx_{out_file_name}_scan.txt"],
-        "[!] HTTPX done!",
-        "HTTPX failed"
+         "-rl", "50", "-p", "80,443,8080,8000,8443", "-o", output_file],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE
     )
+    if result.returncode != 0:
+        raise Exception(f"httpx failed: {result.stderr.decode()}")
 
 def alterx_exec(target_domain):
-    print("[+] Starting AlterX...")
-    run_tool(
+    """Generate subdomain permutations with alterx."""
+    result = subprocess.run(
         ["alterx", "-silent", "-enrich", "-l", f"{target_domain}/domain-recon/dnsx_all_resolved.txt",
          "-o", f"{target_domain}/domain-recon/permutated_subs_output.txt"],
-        "[!] AlterX done!",
-        "AlterX failed"
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE
     )
+    if result.returncode != 0:
+        raise Exception(f"alterx failed: {result.stderr.decode()}")
+
+def bbot_exec(target_domain):
+    """Run bbot subdomain enumeration (passive only)."""
+    result = subprocess.run(
+        ["bbot", "-t", target_domain, "-p", "subdomain-enum",
+         "-rf", "passive",
+         "-n", target_domain, "-om", "subdomains",
+         "-y", "-s"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE
+    )
+    if result.returncode != 0:
+        raise Exception(f"bbot failed: {result.stderr.decode()}")
+
+def bbot_extract_and_append(target_domain):
+    """Extract DNS_NAME entries from bbot output and append to all_subs.txt."""
+    bbot_output = Path.home() / f".bbot/scans/{target_domain}/output.txt"
+    temp_dns_file = f"{target_domain}/domain-recon/bbot_dns_names.txt"
+    
+    if bbot_output.exists():
+        # Extract DNS names
+        result = subprocess.run(
+            f"cat {bbot_output} | grep 'DNS_NAME' | awk '{{print $1}}' > {temp_dns_file}",
+            shell=True, capture_output=True
+        )
+        if result.returncode == 0 and Path(temp_dns_file).exists():
+            # Append to all_subs.txt using anew
+            anew_exec(temp_dns_file, f"{target_domain}/domain-recon/all_subs.txt")
+            # Clean up temp file
+            Path(temp_dns_file).unlink(missing_ok=True)
+        else:
+            error("Failed to extract BBOT results")
+    else:
+        error(f"BBOT output file not found: {bbot_output}")
 
 def anew_exec(input_file, target_file):
     try:
+        Path(target_file).touch(exist_ok=True)
         with open(input_file) as f:
             result = subprocess.run(["anew", target_file], stdin=f, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
         if result.returncode != 0:
-            print(f"[!] 'anew' failed with return code {result.returncode}")
+            error(f"'anew' failed with return code {result.returncode}")
     except FileNotFoundError:
-        print(f"[!] File not found: {input_file}")
+        error(f"File not found: {input_file}")
     except PermissionError:
-        print(f"[!] Permission denied: {input_file}")
+        error(f"Permission denied: {input_file}")
     except Exception as e:
-        print(f"[!] Error: {type(e).__name__}: {e}")
+        error(f"Error: {type(e).__name__}: {e}")
 
 def crtsh_request(target_domain, max_retries=5):
-    print("[+] Fetching data from crt.sh...")
+    """Fetch subdomains from crt.sh API."""
     target_domain = target_domain.lstrip('.').lower()
     url = f"https://crt.sh/?q={target_domain}&output=json"
     headers = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:131.0) Gecko/20100101 Firefox/131.0"}
     
     for attempt in range(1, max_retries + 1):
         try:
-            if attempt > 1:
-                print(f"[*] Retry attempt {attempt}/{max_retries}...")
-            
             req = Request(url, headers=headers)
             with urlopen(req, timeout=30) as response:
                 data = json.loads(response.read().decode())
@@ -92,19 +142,12 @@ def crtsh_request(target_domain, max_retries=5):
             with open(f"{target_domain}/domain-recon/crtsh_output.txt", "w") as f:
                 f.write("\n".join(sorted(subdomains)))
             
-            print(f"[+] Found {len(subdomains)} unique subdomains on crt.sh")
             return
         
-        except HTTPError as e:
-            print(f"[!] HTTP {e.code} - {e.reason} (attempt {attempt}/{max_retries})")
-        except URLError as e:
-            print(f"[!] Network error: {e.reason} (attempt {attempt}/{max_retries})")
-        except json.JSONDecodeError:
-            print(f"[!] Invalid JSON received (attempt {attempt}/{max_retries})")
+        except (HTTPError, URLError, json.JSONDecodeError) as e:
+            if attempt < max_retries:
+                time.sleep(2)
+            else:
+                raise
         except Exception as e:
-            print(f"[!] Error: {e} (attempt {attempt}/{max_retries})")
-        
-        if attempt < max_retries:
-            time.sleep(2)
-    
-    print(f"[!] Failed to fetch data from crt.sh after {max_retries} attempts")
+            raise
