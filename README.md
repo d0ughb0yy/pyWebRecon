@@ -15,12 +15,12 @@ pyWebRecon automates the subdomain discovery process by orchestrating multiple i
 
 **Concurrent Execution**
 - Multi-threaded tool execution for performance
-- Live status monitoring with Rich terminal tables
+- Live status monitoring with text-based display
 - Real-time progress updates with emoji indicators and timestamps
 
 **Developer-Friendly UX**
 - Clean, colorful terminal output using Rich library
-- Visual status table showing pending/running/completed/failed states
+- Visual status display showing pending/running/completed/failed states
 - Detailed error reporting without cluttering successful runs
 
 **Smart Cleanup**
@@ -52,22 +52,23 @@ pip install -r requirements.txt
 ## Usage
 
 ```bash
-python3 pywebrecon.py -d <target-domain> \
-  -fw <wordlist1> \
-  -sw <wordlist2>
+python3 pywebrecon.py -d <target-domain> -fw <wordlist> [-sw <wordlist2>]
 ```
 
-### Example
+### Examples
 ```bash
-python3 pywebrecon.py \
-  -d example.com \
+# Single wordlist
+python3 pywebrecon.py -d example.com -fw /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt
+
+# Dual wordlists
+python3 pywebrecon.py -d example.com \
   -fw /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt \
   -sw /usr/share/seclists/Discovery/DNS/subdomains-top1million-20000.txt
 ```
 
 ## Workflow Pipeline
 
-The framework executes reconnaissance in **4 sequential stages**, with concurrent tool execution within each stage:
+The framework executes reconnaissance in **3 sequential stages**, with concurrent tool execution within each stage:
 
 ### 1. Subdomain Enumeration (Concurrent)
 | Tool | Purpose |
@@ -75,17 +76,14 @@ The framework executes reconnaissance in **4 sequential stages**, with concurren
 | **crt.sh** | Certificate transparency logs |
 | **subfinder** | Passive subdomain discovery |
 | **bbot** | Multi-source passive enumeration |
-| **shuffledns** (×2) | DNS bruteforce with dual wordlists |
+| **shuffledns** (1-2) | DNS bruteforce with wordlists |
 
-### 2. Subdomain Resolution
+### 2. Resolving and Permutation
 - Resolves all discovered subdomains using **dnsx**
-- Filters out unresolvable domains
-
-### 3. Permutation & Expansion
 - Generates subdomain variations with **alterx**
 - Resolves permutations and appends valid ones to results
 
-### 4. HTTP Probing
+### 3. HTTP Probing
 - Probes all resolved domains with **httpx**
 - Captures status codes, redirects, server headers, titles, and CDN info
 
@@ -108,7 +106,7 @@ Intermediate files are automatically cleaned up.
 - Subprocess management for external tool integration
 
 **Key Implementation Details:**
-- **Live Status Table**: Uses Rich's `Live` display with shared `Text` objects for thread-safe updates
+- **Live Status Display**: Uses Rich's `Live` display with text-based status updates
 - **Error Resilience**: Tools raise exceptions on failure; caught and displayed without crashing pipeline
 - **Memory Efficient**: Streams tool outputs directly to files, minimal in-memory data storage
 - **Rate Limiting**: httpx configured with `-rl 50` to be respectful to target infrastructure

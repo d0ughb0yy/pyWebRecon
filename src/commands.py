@@ -4,16 +4,8 @@ from urllib.error import URLError, HTTPError
 from pathlib import Path
 import json
 import time
-from src.output import info, success, warning, error
+from src.output import info, error
 
-def run_tool(cmd, success_msg, error_msg):
-    """Helper to run subprocess commands with consistent error handling."""
-    result = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
-    if result.returncode == 0:
-        success(success_msg)
-    else:
-        error(f"{error_msg}: {result.stderr.decode()}")
-    return result.returncode == 0
 
 def dnsx_exec(subs_file, out_file_name, target):
     """Resolve subdomains with dnsx."""
