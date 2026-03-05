@@ -7,7 +7,7 @@ import time
 from src.output import info, error
 
 
-def dnsx_exec(subs_file, out_file_name, target):
+def dnsxExec(subs_file, out_file_name, target):
     """Resolve subdomains with dnsx."""
     output_file = f"{target}/domain-recon/{out_file_name}"
     result = subprocess.run(
@@ -18,7 +18,7 @@ def dnsx_exec(subs_file, out_file_name, target):
     if result.returncode != 0:
         raise Exception(f"dnsx failed: {result.stderr.decode()}")
 
-def shuffledns_exec(target, wordlist, out_file_name):
+def shufflednsExec(target, wordlist, out_file_name):
     """Run shuffledns DNS bruteforce."""
     resolvers = "/home/d0b0/.config/shuffledns/resolvers.txt"
     result = subprocess.run(
@@ -30,7 +30,7 @@ def shuffledns_exec(target, wordlist, out_file_name):
     if result.returncode != 0:
         raise Exception(f"shuffledns failed: {result.stderr.decode()}")
 
-def subfinder_exec(target_domain):
+def subfinderExec(target_domain):
     """Run subfinder subdomain discovery."""
     result = subprocess.run(
         ["subfinder", "-d", target_domain, "-all", "-silent", "-o", f"{target_domain}/domain-recon/subfinder_output.txt"],
@@ -40,7 +40,7 @@ def subfinder_exec(target_domain):
     if result.returncode != 0:
         raise Exception(f"subfinder failed: {result.stderr.decode()}")
 
-def httpx_exec(target_domain, subs_file):
+def httpxExec(target_domain, subs_file):
     """Probe subdomains with httpx."""
     out_file_name = Path(subs_file).stem
     output_file = f"{target_domain}/domain-recon/httpx_{out_file_name}_scan.txt"
@@ -53,7 +53,7 @@ def httpx_exec(target_domain, subs_file):
     if result.returncode != 0:
         raise Exception(f"httpx failed: {result.stderr.decode()}")
 
-def alterx_exec(target_domain):
+def alterxExec(target_domain):
     """Generate subdomain permutations with alterx."""
     result = subprocess.run(
         ["alterx", "-silent", "-enrich", "-l", f"{target_domain}/domain-recon/dnsx_all_resolved.txt",
@@ -64,7 +64,7 @@ def alterx_exec(target_domain):
     if result.returncode != 0:
         raise Exception(f"alterx failed: {result.stderr.decode()}")
 
-def bbot_exec(target_domain):
+def bbotExec(target_domain):
     """Run bbot subdomain enumeration (passive only)."""
     result = subprocess.run(
         ["bbot", "-t", target_domain, "-p", "subdomain-enum",
@@ -77,7 +77,7 @@ def bbot_exec(target_domain):
     if result.returncode != 0:
         raise Exception(f"bbot failed: {result.stderr.decode()}")
 
-def bbot_extract_and_append(target_domain):
+def bbotExtractAndAppend(target_domain):
     """Extract DNS_NAME entries from bbot output and append to all_subs.txt."""
     bbot_output = Path.home() / f".bbot/scans/{target_domain}/output.txt"
     temp_dns_file = f"{target_domain}/domain-recon/bbot_dns_names.txt"
@@ -90,7 +90,7 @@ def bbot_extract_and_append(target_domain):
         )
         if result.returncode == 0 and Path(temp_dns_file).exists():
             # Append to all_subs.txt using anew
-            anew_exec(temp_dns_file, f"{target_domain}/domain-recon/all_subs.txt")
+            anewExec(temp_dns_file, f"{target_domain}/domain-recon/all_subs.txt")
             # Clean up temp file
             Path(temp_dns_file).unlink(missing_ok=True)
         else:
@@ -98,7 +98,7 @@ def bbot_extract_and_append(target_domain):
     else:
         error(f"BBOT output file not found: {bbot_output}")
 
-def anew_exec(input_file, target_file):
+def anewExec(input_file, target_file):
     try:
         Path(target_file).touch(exist_ok=True)
         with open(input_file) as f:
@@ -112,7 +112,7 @@ def anew_exec(input_file, target_file):
     except Exception as e:
         error(f"Error: {type(e).__name__}: {e}")
 
-def crtsh_request(target_domain, max_retries=5):
+def crtshRequest(target_domain, max_retries=5):
     """Fetch subdomains from crt.sh API."""
     target_domain = target_domain.lstrip('.').lower()
     url = f"https://crt.sh/?q={target_domain}&output=json"
