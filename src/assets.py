@@ -4,7 +4,14 @@ from src.output import runToolsParallel, error, console
 
 
 def subdomainEnumeration(target_domain, first_wordlist, second_wordlist):
-    """Passive and active gathering workflow using crtsh, subfinder, shuffledns, and bbot."""
+    """Passive and active gathering workflow using crtsh, subfinder, shuffledns, and bbot.
+    
+    This function runs multiple subdomain enumeration tools concurrently:
+    - crt.sh: Certificate transparency logs
+    - subfinder: Passive subdomain discovery
+    - bbot: Multi-source passive enumeration
+    - shuffledns: DNS bruteforce with wordlists (1-2 wordlists supported)
+    """
     console.print("\n[bold green]Gathering Subdomains...[/bold green]\n")
     first_wordlist_name = Path(first_wordlist).stem
     second_wordlist_name = Path(second_wordlist).stem if second_wordlist else None
@@ -32,42 +39,83 @@ def subdomainEnumeration(target_domain, first_wordlist, second_wordlist):
         anewExec(f"{target_domain}/domain-recon/{src}", f"{target_domain}/domain-recon/all_subs.txt")
 
 
-def subdomainResolvePermute(target_domain):
-    """Resolve and permutate subdomains with dnsx and alterx."""
-    console.print("\n[bold green]Resolving and Permutation[/bold green]\n")
-
+def processingSubdomains(target_domain):
+    """Process subdomains by resolving and scanning with httpx.
+    
+    This function performs two sequential operations:
+    1. Resolve subdomains from all_subs.txt using dnsx
+    2. Scan resolved domains with httpx to gather HTTP metadata
+    
+    Output files:
+    - dnsx_resolved.txt: Resolved subdomains
+    - httpx_scan.txt: HTTP probe results with status codes, titles, etc.
+    """
+    console.print("\n[bold green]Processing subdomains[/bold green]\n")
+    
+    # Resolve subdomains
     tools = {
-        "dnsx": (dnsxExec, ("all_subs.txt", "dnsx_all_resolved.txt", target_domain)),
+        "dnsx": (dnsxExec, ("all_subs.txt", "dnsx_resolved.txt", target_domain)),
     }
     runToolsParallel(tools)
+    
+    # Run httpx scan on resolved domains
+    tools_httpx = {
+        "httpx": (httpxExec, (target_domain, f"{target_domain}/domain-recon/dnsx_resolved.txt", "httpx_scan.txt")),
+    }
+    runToolsParallel(tools_httpx)
 
+
+def permutateSubdomains(target_domain):
+    """Permutate subdomains, resolve them, and scan with httpx.
+    
+    This function performs three sequential operations:
+    1. Generate subdomain permutations using alterx
+    2. Resolve permutated domains using dnsx
+    3. Scan resolved permutated domains with httpx
+    
+    Output files:
+    - dnsx_permutated_resolved.txt: Resolved permutated subdomains
+    - httpx_permutated_scan.txt: HTTP probe results for permutated domains
+    """
+    console.print("\n[bold green]Permutating subdomains[/bold green]\n")
+    
+    # Generate permutations
     tools1 = {
         "alterx": (alterxExec, (target_domain,)),
     }
     runToolsParallel(tools1)
-
+    
+    # Resolve permutated domains
     tools2 = {
-        "dnsx-permutated": (dnsxExec, ("permutated_subs_output.txt", "dnsx_permutated_resolved_output.txt", target_domain)),
+        "dnsx-permutated": (dnsxExec, ("permutated_subs_output.txt", "dnsx_permutated_resolved.txt", target_domain)),
     }
     runToolsParallel(tools2)
-
-    anewExec(f"{target_domain}/domain-recon/dnsx_permutated_resolved_output.txt", f"{target_domain}/domain-recon/dnsx_all_resolved.txt")
-
-
-def finalHttpxScan(target_domain):
-    """Run final httpx scan on all resolved subdomains."""
-    console.print("\n[bold green]HTTPX Scan[/bold green]\n")
-
-    tools = {
-        "httpx": (httpxExec, (target_domain, f"{target_domain}/domain-recon/dnsx_all_resolved.txt")),
+    
+    # Run httpx scan on permutated domains
+    tools_httpx = {
+        "httpx": (httpxExec, (target_domain, f"{target_domain}/domain-recon/dnsx_permutated_resolved.txt", "httpx_permutated_scan.txt")),
     }
-    runToolsParallel(tools)
+    runToolsParallel(tools_httpx)
 
 
 def cleanup(target_domain):
-    """Remove intermediate files."""
+    """Remove intermediate files while preserving final results.
+    
+    Preserved files:
+    - dnsx_resolved.txt: Normal resolved subdomains
+    - dnsx_permutated_resolved.txt: Permutated resolved subdomains
+    - httpx_scan.txt: HTTP scan results for normal domains
+    - httpx_permutated_scan.txt: HTTP scan results for permutated domains
+    
+    Removed files:
+    - Intermediate tool outputs (*_output.txt, permutated_*, etc.)
+    - Aggregated subdomain list (all_subs.txt)
+    - BBOT scan directory
+    """
     directory = Path(f"{target_domain}/domain-recon/")
-    for pattern in ["*_output.txt", "permutated_*", "dnsx_permutated_*", "all_subs.txt", "bbot_*"]:
+    # Keep: dnsx_resolved.txt, dnsx_permutated_resolved.txt, httpx_scan.txt, httpx_permutated_scan.txt
+    # Remove: *_output.txt, permutated_*, all_subs.txt, bbot_*, crtsh_output.txt, subfinder_output.txt, shuffledns_*
+    for pattern in ["*_output.txt", "permutated_*", "all_subs.txt", "bbot_*", "crtsh_output.txt", "subfinder_output.txt", "shuffledns_*"]:
         for file_path in directory.glob(pattern):
             if file_path.is_file():
                 try:

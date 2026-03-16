@@ -40,10 +40,14 @@ def subfinderExec(target_domain):
     if result.returncode != 0:
         raise Exception(f"subfinder failed: {result.stderr.decode()}")
 
-def httpxExec(target_domain, subs_file):
+def httpxExec(target_domain, subs_file, output_filename=None):
     """Probe subdomains with httpx."""
-    out_file_name = Path(subs_file).stem
-    output_file = f"{target_domain}/domain-recon/httpx_{out_file_name}_scan.txt"
+    if output_filename is None:
+        out_file_name = Path(subs_file).stem
+        output_file = f"{target_domain}/domain-recon/httpx_{out_file_name}_scan.txt"
+    else:
+        output_file = f"{target_domain}/domain-recon/{output_filename}"
+    
     result = subprocess.run(
         ["httpx", "-silent", "-l", subs_file, "-fc", "404", "-sc", "-location", "-server", "-cdn", "-title",
          "-rl", "50", "-p", "80,443,8080,8000,8443", "-o", output_file],
@@ -56,7 +60,7 @@ def httpxExec(target_domain, subs_file):
 def alterxExec(target_domain):
     """Generate subdomain permutations with alterx."""
     result = subprocess.run(
-        ["alterx", "-silent", "-enrich", "-l", f"{target_domain}/domain-recon/dnsx_all_resolved.txt",
+        ["alterx", "-silent", "-enrich", "-l", f"{target_domain}/domain-recon/dnsx_resolved.txt",
          "-o", f"{target_domain}/domain-recon/permutated_subs_output.txt"],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.PIPE
