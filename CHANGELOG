@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2] - 2026-03-17
+
+### Added
+- Temporary file support using Python's `tempfile` standard library
+- Consistent status display across all phases using `runToolsParallel()`
+
+### Changed
+- **Eliminated permanent intermediate files**: All tool outputs now use temporary files that auto-delete
+- **Refactored tool functions to return sets**: `crtshRequest()`, `subfinderExec()`, `bbotExec()`, `shufflednsExec()`, `dnsxExec()`, `alterxExec()` now return sets instead of writing to files
+- **Updated `httpxExec()`**: Now accepts domains as a set, pipes via stdin, and returns an empty set for consistency
+- **Refactored workflow functions**: `processingSubdomains()` and `permutateSubdomains()` now use `runToolsParallel()` for consistent status display
+- **Updated `bbotExec()`**: Uses temporary directory instead of file for BBOT's `-o` flag
+- **Removed count display**: Removed "Found X unique subdomains" message from enumeration phase
+- **Simplified cleanup**: Removed intermediate file deletion logic (now handled by tempfile auto-delete)
+
+### Removed
+- `anewExec()` function: Replaced by Python set operations for deduplication
+- `bbotExtractAndAppend()` function: No longer needed (bbotExec handles extraction directly)
+- `info` import from `src/commands.py`: Unused import
+- Intermediate file writes from all tool functions
+- Count display from enumeration phase
+
 ## [1.1] - 2026-03-16
 
 ### Changed

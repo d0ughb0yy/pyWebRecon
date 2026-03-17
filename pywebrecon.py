@@ -48,9 +48,16 @@ Examples:
     
     os.makedirs(f"{target_domain}/domain-recon", exist_ok=True)
 
-    subdomainEnumeration(target_domain, first_wordlist, second_wordlist)
-    processingSubdomains(target_domain)
-    permutateSubdomains(target_domain)
+    # Stage 1: Gather subdomains (concurrent enumeration)
+    all_subdomains = subdomainEnumeration(target_domain, first_wordlist, second_wordlist)
+    
+    # Stage 2: Process subdomains (resolve and scan)
+    if all_subdomains:
+        processingSubdomains(target_domain, all_subdomains)
+    
+    # Stage 3: Permute subdomains
+    if all_subdomains:
+        permutateSubdomains(target_domain, all_subdomains)
 
     console.print()
     cleanup(target_domain)

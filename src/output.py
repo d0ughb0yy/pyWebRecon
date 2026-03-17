@@ -27,10 +27,14 @@ def runToolsParallel(tools_dict):
 
     Args:
         tools_dict: Dict mapping tool names to (function, args) tuples
+    
+    Returns:
+        Dict mapping tool names to their return values (sets of subdomains)
     """
     tool_names = list(tools_dict.keys())
     live_status = LiveStatus(tool_names)
     results = {}
+    errors = {}
 
     with Live(live_status, refresh_per_second=4, transient=False) as live:
         def runTool(tool_name, tool_func, tool_args):
@@ -39,11 +43,11 @@ def runToolsParallel(tools_dict):
                 result = tool_func(*tool_args)
                 timestamp = datetime.now().strftime("%H:%M:%S")
                 live_status.updateStatus(tool_name, f"✅ {tool_name} COMPLETED {timestamp}", "green")
-                results[tool_name] = (True, result)
+                results[tool_name] = result
             except Exception as e:
                 timestamp = datetime.now().strftime("%H:%M:%S")
                 live_status.updateStatus(tool_name, f"❌ {tool_name} FAILED {timestamp}", "red")
-                results[tool_name] = (False, str(e))
+                errors[tool_name] = str(e)
 
         threads = []
         for tool_name, (tool_func, tool_args) in tools_dict.items():
@@ -54,11 +58,10 @@ def runToolsParallel(tools_dict):
         for t in threads:
             t.join()
 
-    failed = [(name, msg) for name, (success, msg) in results.items() if not success]
-    if failed:
+    if errors:
         console.print()
         console.print("[bold]Execution Summary:[/bold]")
-        for tool_name, error_msg in failed:
+        for tool_name, error_msg in errors.items():
             console.print(f"[red]✗[/red] {tool_name}: {error_msg}")
         console.print()
 
