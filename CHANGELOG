@@ -2,7 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.2] - 2026-03-17
+## [1.03] - 2026-03-17
+
+### Added
+- Dynamic limits for `alterx` to prevent excessive runtime on large targets
+- `calculate_dynamic_limits()` function for adaptive limit calculation
+
+### Changed
+- **`alterxExec()`**: Now uses dynamic limits based on input size
+  - Very small targets (≤100 domains): Up to 2,000 permutations
+  - Small targets (101-500 domains): Up to 5,000 permutations  
+  - Medium targets (501-2000 domains): Up to 5,000 permutations
+  - Large targets (2001+ domains): Up to 5,000 permutations with conservative n-gram limits
+
+## [1.02] - 2026-03-17
 
 ### Added
 - Temporary file support using Python's `tempfile` standard library
@@ -24,7 +37,7 @@ All notable changes to this project will be documented in this file.
 - Intermediate file writes from all tool functions
 - Count display from enumeration phase
 
-## [1.1] - 2026-03-16
+## [1.01] - 2026-03-16
 
 ### Changed
 - Separated normal and permutated domain processing into distinct sequential phases
