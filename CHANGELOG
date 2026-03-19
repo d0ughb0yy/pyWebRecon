@@ -2,18 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1] - 2026-03-19
+
+### Removed
+- **Permutation phase**: Removed entire alterx permutation pipeline
+- `permutateSubdomains()` function from `src/assets.py`
+- `alterxExec()` function from `src/commands.py`
+- `calculate_dynamic_limits()` function from `src/commands.py`
+- Permutation output files: `dnsx_permutated_resolved.txt`, `httpx_permutated_scan.txt`
+
+### Changed
+- Program now ends after httpx scan of resolved normal domains
+- Simplified workflow: Enumeration → Processing (dnsx → httpx)
+- Removed alterx from tool dependencies
+
+### Output Files
+- `dnsx_resolved.txt` - Resolved subdomains
+- `httpx_scan.txt` - HTTP scan results for resolved domains
+
 ## [1.03] - 2026-03-17
 
 ### Added
 - Dynamic limits for `alterx` to prevent excessive runtime on large targets
 - `calculate_dynamic_limits()` function for adaptive limit calculation
 
+### Fixed
+- **Critical bug fix**: `alterx` was running on all unresolved subdomains instead of resolved domains
+- **`pywebrecon.py`**: Now captures `resolved_domains` from `processingSubdomains()` and passes to `permutateSubdomains()`
+- **`processingSubdomains()`**: Now returns `resolved_domains` for use in permutation phase
+- This fix reduces alterx runtime from 24+ hours to <1 minute for large targets
+
 ### Changed
 - **`alterxExec()`**: Now uses dynamic limits based on input size
-  - Very small targets (≤100 domains): Up to 2,000 permutations
-  - Small targets (101-500 domains): Up to 5,000 permutations  
-  - Medium targets (501-2000 domains): Up to 5,000 permutations
-  - Large targets (2001+ domains): Up to 5,000 permutations with conservative n-gram limits
+  - Very small targets (≤50 domains): Up to 2,000 permutations
+  - Small targets (51-200 domains): Up to 2,000 permutations  
+  - Medium targets (201-500 domains): Up to 2,000 permutations
+  - Large targets (501+ domains): Up to 1,000 permutations with very conservative n-gram limits
 
 ## [1.02] - 2026-03-17
 

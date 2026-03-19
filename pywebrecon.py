@@ -54,10 +54,6 @@ Examples:
     # Stage 2: Process subdomains (resolve and scan)
     if all_subdomains:
         processingSubdomains(target_domain, all_subdomains)
-    
-    # Stage 3: Permute subdomains
-    if all_subdomains:
-        permutateSubdomains(target_domain, all_subdomains)
 
     console.print()
     cleanup(target_domain)

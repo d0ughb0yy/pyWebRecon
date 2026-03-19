@@ -9,42 +9,6 @@ import uuid
 from src.output import error
 
 
-def calculate_dynamic_limits(domain_count):
-    """Calculate dynamic limits based on input size with minimum guarantees.
-    
-    This function determines appropriate -limit and -ngrams-limit values for alterx
-    based on the number of input domains to prevent excessive runtime on large targets.
-    
-    Args:
-        domain_count: Number of domains being processed
-        
-    Returns:
-        tuple: (alterx_limit, ngrams_limit) values to use with alterx
-    """
-    # Minimum limits to ensure meaningful output
-    MIN_ALTERX_LIMIT = 100
-    MIN_NGRAMS_LIMIT = 50
-    
-    if domain_count <= 100:
-        # Very small target - generous limits
-        alterx_limit = max(MIN_ALTERX_LIMIT, min(2000, domain_count * 20))
-        ngrams_limit = max(MIN_NGRAMS_LIMIT, min(500, domain_count * 5))
-    elif domain_count <= 500:
-        # Small target - aggressive
-        alterx_limit = max(MIN_ALTERX_LIMIT, min(5000, domain_count * 10))
-        ngrams_limit = max(MIN_NGRAMS_LIMIT, min(1000, domain_count * 2))
-    elif domain_count <= 2000:
-        # Medium target - balanced
-        alterx_limit = max(MIN_ALTERX_LIMIT, min(5000, domain_count * 5))
-        ngrams_limit = max(MIN_NGRAMS_LIMIT, min(500, domain_count))
-    else:
-        # Large target - conservative
-        alterx_limit = max(MIN_ALTERX_LIMIT, min(5000, domain_count * 2))
-        ngrams_limit = max(MIN_NGRAMS_LIMIT, min(300, domain_count // 10))
-    
-    return alterx_limit, ngrams_limit
-
-
 def dnsxExec(domains, target_domain, output_filename):
     """Resolve subdomains with dnsx and return resolved domains as a set.
     
@@ -164,47 +128,6 @@ def httpxExec(domains, target_domain, output_filename):
             raise Exception(f"httpx failed: {stderr}")
     
     return set()
-
-
-def alterxExec(domains):
-    """Generate subdomain permutations with alterx and return as a set.
-    
-    Uses temporary files for input and output, then returns permutations as a set.
-    Dynamic limits are calculated based on input size to prevent excessive runtime.
-    """
-    domain_count = len(domains)
-    
-    # Calculate dynamic limits based on input size
-    alterx_limit, ngrams_limit = calculate_dynamic_limits(domain_count)
-    
-    # Create temporary input and output files
-    with tempfile.NamedTemporaryFile(mode='w+', suffix='.txt', delete=True) as input_tmp:
-        with tempfile.NamedTemporaryFile(mode='r+', suffix='.txt', delete=True) as output_tmp:
-            # Write domains to temporary input file
-            for domain in domains:
-                input_tmp.write(f"{domain}\n")
-            input_tmp.flush()
-            
-            # Run alterx with dynamic limits
-            result = subprocess.run(
-                ["alterx", "-silent", "-enrich", "-l", input_tmp.name, "-o", output_tmp.name,
-                 "-limit", str(alterx_limit), "-ngrams-limit", str(ngrams_limit)],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.PIPE
-            )
-            if result.returncode != 0:
-                stderr = result.stderr.decode() if isinstance(result.stderr, bytes) else result.stderr
-                raise Exception(f"alterx failed: {stderr}")
-            
-            # Read permutations from output file
-            output_tmp.seek(0)
-            permutations = set()
-            for line in output_tmp:
-                line = line.strip()
-                if line:
-                    permutations.add(line)
-    
-    return permutations
 
 
 def bbotExec(target_domain):

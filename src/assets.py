@@ -68,43 +68,6 @@ def processingSubdomains(target_domain, all_subdomains):
         runToolsParallel(tools_httpx)
 
 
-def permutateSubdomains(target_domain, resolved_domains):
-    """Permutate subdomains, resolve them, and scan with httpx.
-    
-    This function performs three sequential operations:
-    1. Generate subdomain permutations using alterx
-    2. Resolve permutated domains using dnsx
-    3. Scan resolved permutated domains with httpx
-    
-    Args:
-        target_domain: The target domain to scan
-        resolved_domains: Set of resolved subdomains from previous stage
-    """
-    console.print("\n[bold green]Permutating subdomains[/bold green]\n")
-    
-    # Generate permutations using runToolsParallel for consistent status display
-    tools_alterx = {
-        "alterx": (alterxExec, (resolved_domains,))
-    }
-    results = runToolsParallel(tools_alterx)
-    permutated_domains = results.get("alterx", set())
-    
-    if permutated_domains:
-        # Resolve permutated domains using runToolsParallel
-        tools_dnsx = {
-            "dnsx-permutated": (dnsxExec, (permutated_domains, target_domain, "dnsx_permutated_resolved.txt"))
-        }
-        results = runToolsParallel(tools_dnsx)
-        resolved_perm_domains = results.get("dnsx-permutated", set())
-        
-        # Run httpx scan on permutated domains using runToolsParallel
-        if resolved_perm_domains:
-            tools_httpx = {
-                "httpx-permutated": (httpxExec, (resolved_perm_domains, target_domain, "httpx_permutated_scan.txt"))
-            }
-            runToolsParallel(tools_httpx)
-
-
 def cleanup(target_domain):
     """Cleanup temporary files and external scan directories.
     """
