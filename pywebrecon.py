@@ -26,30 +26,29 @@ if __name__ == "__main__":
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python3 pywebrecon.py -d example.com -fw wordlist1.txt
-  python3 pywebrecon.py -d example.com -fw wordlist1.txt -sw wordlist2.txt
-  python3 pywebrecon.py -d example.com -fw ~/wordlists/subdomains.txt -sw ~/wordlists/names.txt
+  python3 pywebrecon.py -d example.com -w wordlist1.txt
+  python3 pywebrecon.py -d example.com -w wordlist1.txt wordlist2.txt
+  python3 pywebrecon.py -d example.com -w ~/wordlists/subdomains.txt ~/wordlists/names.txt ~/wordlists/more.txt
 """
     )
     parser.add_argument("-d", "--domain", required=True, help="Target domain")
-    parser.add_argument("-fw", "--first-wordlist", help="First shuffledns wordlist path (optional)")
-    parser.add_argument("-sw", "--second-wordlist", help="Second shuffledns wordlist path (optional)")
+    parser.add_argument("-w", "--wordlist", nargs="+", required=True, help="Shuffledns wordlist path(s) (one or more)")
 
     args = parser.parse_args()
     
     target_domain = args.domain
-    first_wordlist = args.first_wordlist
-    second_wordlist = args.second_wordlist
+    wordlists = args.wordlist
 
-    if not first_wordlist:
-        parser.error("at least one wordlist is required (-fw/--first-wordlist)")
+    for wl in wordlists:
+        if not os.path.exists(wl):
+            parser.error(f"wordlist file not found: {wl}")
 
     print(BANNER)
     
     os.makedirs(f"{target_domain}/domain-recon", exist_ok=True)
 
     # Stage 1: Gather subdomains (concurrent enumeration)
-    all_subdomains = subdomainEnumeration(target_domain, first_wordlist, second_wordlist)
+    all_subdomains = subdomainEnumeration(target_domain, wordlists)
     
     # Stage 2: Process subdomains (resolve and scan)
     if all_subdomains:

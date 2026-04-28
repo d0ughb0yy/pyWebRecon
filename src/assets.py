@@ -1,35 +1,61 @@
 from pathlib import Path
 from datetime import datetime
+import tempfile
+import os
 from src.commands import *
 from src.output import runToolsParallel, error, console
 
 
-def subdomainEnumeration(target_domain, first_wordlist, second_wordlist):
+def subdomainEnumeration(target_domain, wordlists):
     """Passive and active gathering workflow using crtsh, subfinder, shuffledns, and bbot.
     
     This function runs multiple subdomain enumeration tools concurrently:
     - crt.sh: Certificate transparency logs
     - subfinder: Passive subdomain discovery
     - bbot: Multi-source passive enumeration
-    - shuffledns: DNS bruteforce with wordlists (1-2 wordlists supported)
+    - shuffledns: DNS bruteforce with combined wordlists (single process)
+    
+    Args:
+        target_domain: Target domain for enumeration
+        wordlists: List of wordlist file paths to combine for shuffledns
     
     Returns:
         set: Aggregated set of all discovered subdomains
     """
     console.print("\n[bold green]Gathering Subdomains...[/bold green]\n")
 
+    # Combine all wordlists into a single temp file
+    combined_wordlist_path = None
+    if wordlists:
+        all_words = set()
+        for wl in wordlists:
+            with open(wl, 'r') as f:
+                for line in f:
+                    word = line.strip()
+                    if word:
+                        all_words.add(word)
+        
+        # Write combined, deduplicated wordlist to temp file
+        with tempfile.NamedTemporaryFile(mode='w+', suffix='.txt', delete=False) as tmp:
+            for word in all_words:
+                tmp.write(f"{word}\n")
+            combined_wordlist_path = tmp.name
+
     tools = {
         "crt.sh": (crtshRequest, (target_domain,)),
         "subfinder": (subfinderExec, (target_domain,)),
         "bbot": (bbotExec, (target_domain,)),
-        "shuffledns-1": (shufflednsExec, (target_domain, first_wordlist)),
     }
     
-    if second_wordlist:
-        tools["shuffledns-2"] = (shufflednsExec, (target_domain, second_wordlist))
+    if combined_wordlist_path:
+        tools["shuffledns"] = (shufflednsExec, (target_domain, combined_wordlist_path))
     
     # Run tools concurrently and get results
     results = runToolsParallel(tools)
+    
+    # Clean up temp file
+    if combined_wordlist_path and os.path.exists(combined_wordlist_path):
+        os.unlink(combined_wordlist_path)
     
     # Aggregate all subdomains from tool results
     all_subdomains = set()

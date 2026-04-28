@@ -41,18 +41,21 @@ pip install -r requirements.txt
 ## Usage
 
 ```bash
-python3 pywebrecon.py -d <target-domain> -fw <wordlist> [-sw <wordlist2>]
+python3 pywebrecon.py -d <target-domain> -w <wordlist> [wordlist2] [wordlist3] ...
 ```
 
 ### Examples
 ```bash
 # Single wordlist
-python3 pywebrecon.py -d example.com -fw /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt
+python3 pywebrecon.py -d example.com -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt
 
-# Dual wordlists
+# Multiple wordlists (combined into single shuffledns process)
 python3 pywebrecon.py -d example.com \
-  -fw /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt \
-  -sw /usr/share/seclists/Discovery/DNS/subdomains-top1million-20000.txt
+  -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt \
+     /usr/share/seclists/Discovery/DNS/subdomains-top1million-20000.txt
+
+# Three or more wordlists
+python3 pywebrecon.py -d example.com -w wl1.txt wl2.txt wl3.txt
 ```
 
 ## Technical Highlights
