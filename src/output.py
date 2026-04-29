@@ -13,7 +13,7 @@ class LiveStatus:
     def __init__(self, tools):
         self.status = {}
         for tool in tools:
-            self.status[tool] = Text(f"⏳ {tool} pending", style="yellow")
+            self.status[tool] = Text(f"- {tool} pending", style="yellow")
 
     def updateStatus(self, tool_name, status_text, style="white"):
         self.status[tool_name] = Text(status_text, style=style)
@@ -39,14 +39,14 @@ def runToolsParallel(tools_dict):
     with Live(live_status, refresh_per_second=4, transient=False) as live:
         def runTool(tool_name, tool_func, tool_args):
             try:
-                live_status.updateStatus(tool_name, f"🔄 {tool_name} running...", "blue")
+                live_status.updateStatus(tool_name, f"+ {tool_name} running...", "cyan")
                 result = tool_func(*tool_args)
                 timestamp = datetime.now().strftime("%H:%M:%S")
-                live_status.updateStatus(tool_name, f"✅ {tool_name} COMPLETED {timestamp}", "green")
+                live_status.updateStatus(tool_name, f"+ {tool_name} COMPLETED {timestamp}", "green")
                 results[tool_name] = result
             except Exception as e:
                 timestamp = datetime.now().strftime("%H:%M:%S")
-                live_status.updateStatus(tool_name, f"❌ {tool_name} FAILED {timestamp}", "red")
+                live_status.updateStatus(tool_name, f"! {tool_name} FAILED {timestamp}", "red")
                 errors[tool_name] = str(e)
 
         threads = []
@@ -62,7 +62,7 @@ def runToolsParallel(tools_dict):
         console.print()
         console.print("[bold]Execution Summary:[/bold]")
         for tool_name, error_msg in errors.items():
-            console.print(f"[red]✗[/red] {tool_name}: {error_msg}")
+            console.print(f"[red]![/red] {tool_name}: {error_msg}")
         console.print()
 
     return results
@@ -75,4 +75,4 @@ def info(msg: str):
 
 def error(msg: str):
     """Error style - red bold"""
-    console.print(f"[bold red][✗][/bold red] {msg}")
+    console.print(f"[bold red][!][/bold red] {msg}")
