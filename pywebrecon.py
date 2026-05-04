@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
-from src.assets import *
-from src.commands import *
+from src.assets import subdomainEnumeration, processingSubdomains, cleanup
 from src.output import info, console
 import os
 import argparse
@@ -39,9 +38,19 @@ Examples:
     target_domain = args.domain
     wordlists = args.wordlist
 
+    # Validate domain format
+    import re
+    domain_pattern = re.compile(r'^(?!-)[A-Za-z0-9-]{1,63}(?<!-)(\.(?!-)[A-Za-z0-9-]{1,63}(?<!-))*$')
+    if not domain_pattern.match(target_domain):
+        parser.error(f"invalid domain format: {target_domain}")
+
     for wl in wordlists:
         if not os.path.exists(wl):
             parser.error(f"wordlist file not found: {wl}")
+        if not os.access(wl, os.R_OK):
+            parser.error(f"wordlist file not readable: {wl}")
+        if os.path.getsize(wl) == 0:
+            parser.error(f"wordlist file is empty: {wl}")
 
     print(BANNER)
     

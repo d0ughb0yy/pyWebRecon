@@ -1,8 +1,8 @@
 from pathlib import Path
-from datetime import datetime
 import tempfile
 import os
-from src.commands import *
+import shutil
+from src.commands import crtshRequest, subfinderExec, bbotExec, shufflednsExec, dnsxExec, httpxExec
 from src.output import runToolsParallel, error, console
 
 
@@ -23,7 +23,7 @@ def subdomainEnumeration(target_domain, wordlists):
         set: Aggregated set of all discovered subdomains
     """
     console.print("\n[bold green]Gathering Subdomains...[/bold green]\n")
-
+    
     # Combine all wordlists into a single temp file
     combined_wordlist_path = None
     if wordlists:
@@ -40,30 +40,31 @@ def subdomainEnumeration(target_domain, wordlists):
             for word in all_words:
                 tmp.write(f"{word}\n")
             combined_wordlist_path = tmp.name
-
-    tools = {
-        "crt.sh": (crtshRequest, (target_domain,)),
-        "subfinder": (subfinderExec, (target_domain,)),
-        "bbot": (bbotExec, (target_domain,)),
-    }
     
-    if combined_wordlist_path:
-        tools["shuffledns"] = (shufflednsExec, (target_domain, combined_wordlist_path))
-    
-    # Run tools concurrently and get results
-    results = runToolsParallel(tools)
-    
-    # Clean up temp file
-    if combined_wordlist_path and os.path.exists(combined_wordlist_path):
-        os.unlink(combined_wordlist_path)
-    
-    # Aggregate all subdomains from tool results
-    all_subdomains = set()
-    for tool_name, tool_result in results.items():
-        if isinstance(tool_result, set):
-            all_subdomains.update(tool_result)
-    
-    return all_subdomains
+    try:
+        tools = {
+            "crt.sh": (crtshRequest, (target_domain,)),
+            "subfinder": (subfinderExec, (target_domain,)),
+            "bbot": (bbotExec, (target_domain,)),
+        }
+        
+        if combined_wordlist_path:
+            tools["shuffledns"] = (shufflednsExec, (target_domain, combined_wordlist_path))
+        
+        # Run tools concurrently and get results
+        results = runToolsParallel(tools)
+        
+        # Aggregate all subdomains from tool results
+        all_subdomains = set()
+        for tool_name, tool_result in results.items():
+            if isinstance(tool_result, set):
+                all_subdomains.update(tool_result)
+        
+        return all_subdomains
+    finally:
+        # Clean up temp file
+        if combined_wordlist_path and os.path.exists(combined_wordlist_path):
+            os.unlink(combined_wordlist_path)
 
 
 def processingSubdomains(target_domain, all_subdomains):
@@ -100,7 +101,6 @@ def cleanup(target_domain):
     # Clean up BBOT scan directory in home directory
     bbotScanDir = Path.home() / f".bbot/scans/{target_domain}"
     if bbotScanDir.exists():
-        import shutil
         try:
             shutil.rmtree(bbotScanDir)
         except Exception as e:

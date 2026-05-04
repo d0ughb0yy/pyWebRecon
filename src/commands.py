@@ -1,4 +1,5 @@
 import subprocess
+import shutil
 from urllib.request import urlopen, Request
 from urllib.error import URLError, HTTPError
 from pathlib import Path
@@ -6,6 +7,7 @@ import json
 import time
 import tempfile
 import uuid
+import os
 from src.output import error
 
 
@@ -28,7 +30,8 @@ def dnsxExec(domains, target_domain, output_filename):
         result = subprocess.run(
             ["dnsx", "-l", input_tmp.name, "-o", output_file, "-silent", "-nc"],
             stdout=subprocess.DEVNULL,
-            stderr=subprocess.PIPE
+            stderr=subprocess.PIPE,
+            timeout=1800
         )
         if result.returncode != 0:
             stderr = result.stderr.decode() if isinstance(result.stderr, bytes) else result.stderr
@@ -57,7 +60,8 @@ def shufflednsExec(target, wordlist):
         ["shuffledns", "-d", target, "-w", wordlist, "-r", resolvers, "-mode", "bruteforce",
          "-silent", "-nc", "-t", "1000"],
         stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
+        stderr=subprocess.PIPE,
+        timeout=1800
     )
     if result.returncode != 0:
         stderr = result.stderr.decode() if isinstance(result.stderr, bytes) else result.stderr
@@ -83,7 +87,8 @@ def subfinderExec(target_domain):
         ["subfinder", "-d", target_domain, "-all", "-silent"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        text=True
+        text=True,
+        timeout=1800
     )
     if result.returncode != 0:
         raise Exception(f"subfinder failed: {result.stderr}")
@@ -121,7 +126,8 @@ def httpxExec(domains, target_domain, output_filename):
             ["httpx", "-silent", "-l", input_tmp.name, "-fc", "404", "-sc", "-location", "-server", "-cdn", "-title",
              "-rl", "50", "-p", "80,443,8080,8000,8443", "-o", output_file],
             stdout=subprocess.DEVNULL,
-            stderr=subprocess.PIPE
+            stderr=subprocess.PIPE,
+            timeout=1800
         )
         if result.returncode != 0:
             stderr = result.stderr.decode() if isinstance(result.stderr, bytes) else result.stderr
@@ -136,8 +142,6 @@ def bbotExec(target_domain):
     Uses bbot's -o flag to write to a temporary directory, then reads the
     subdomains output file and cleans up the directory.
     """
-    import shutil
-    
     # Create temporary directory path in target directory
     temp_dir = f"{target_domain}/domain-recon/bbot_tmp_{uuid.uuid4().hex[:8]}"
     
@@ -148,7 +152,8 @@ def bbotExec(target_domain):
              "-n", target_domain, "-om", "subdomains",
              "-o", temp_dir, "-y", "-s"],
             stdout=subprocess.DEVNULL,
-            stderr=subprocess.PIPE
+            stderr=subprocess.PIPE,
+            timeout=1800
         )
         if result.returncode != 0:
             stderr = result.stderr.decode() if isinstance(result.stderr, bytes) else result.stderr
@@ -184,7 +189,12 @@ def crtshRequest(target_domain, max_retries=5):
     """
     target_domain = target_domain.lstrip('.').lower()
     url = f"https://crt.sh/?q={target_domain}&output=json"
-    headers = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:131.0) Gecko/20100101 Firefox/131.0"}
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://crt.sh/",
+    }
     
     for attempt in range(1, max_retries + 1):
         try:
@@ -203,7 +213,8 @@ def crtshRequest(target_domain, max_retries=5):
         
         except (HTTPError, URLError, json.JSONDecodeError) as e:
             if attempt < max_retries:
-                time.sleep(2)
+                backoff = 2 ** attempt
+                time.sleep(backoff)
             else:
                 raise
         except Exception as e:

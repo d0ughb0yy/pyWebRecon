@@ -4,7 +4,7 @@ from rich.live import Live
 from rich.text import Text
 from rich.console import Group
 from datetime import datetime
-import threading
+import concurrent.futures
 
 console = Console()
 
@@ -49,22 +49,20 @@ def runToolsParallel(tools_dict):
                 live_status.updateStatus(tool_name, f"! {tool_name} FAILED {timestamp}", "red")
                 errors[tool_name] = str(e)
 
-        threads = []
-        for tool_name, (tool_func, tool_args) in tools_dict.items():
-            t = threading.Thread(target=runTool, args=(tool_name, tool_func, tool_args))
-            threads.append(t)
-            t.start()
-
-        for t in threads:
-            t.join()
-
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(tools_dict)) as executor:
+            futures = {
+                executor.submit(runTool, tool_name, tool_func, tool_args): tool_name
+                for tool_name, (tool_func, tool_args) in tools_dict.items()
+            }
+            concurrent.futures.wait(futures)
+    
     if errors:
         console.print()
         console.print("[bold]Execution Summary:[/bold]")
         for tool_name, error_msg in errors.items():
             console.print(f"[red]![/red] {tool_name}: {error_msg}")
         console.print()
-
+    
     return results
 
 
