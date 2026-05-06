@@ -67,8 +67,8 @@ from src.output import runToolsParallel, error, console
 ### Output Helpers
 ```python
 from src.output import info, error, console
-info("Starting...")    # [+] green
-error("Failed!")       # [!] red
+info("Starting...")    # ✅ green
+error("Failed!")       # ❗ red
 ```
 
 ## Live Status Pattern
@@ -83,6 +83,7 @@ results = runToolsParallel(tools)
 - Uses Rich `Live` display at 4Hz
 - Tools run concurrently via `concurrent.futures.ThreadPoolExecutor`
 - Exceptions caught and shown in Execution Summary
+- Status indicators: ⏳ pending, ✅ completed, ❌ failed
 
 ## Error Handling
 Tools raise exceptions on failure:
@@ -124,6 +125,13 @@ bbot -t <target> -p subdomain-enum -rf passive -n <target> -om subdomains -o <te
 - Wordlists combined into temp file using set for deduplication
 - Temp file cleanup guaranteed via `try/finally`
 - `shutil` imported at module level (not locally)
+
+## Emoji System
+The output system now uses emojis for better visual feedback:
+- ✅ Checkmark: Completed tasks and info messages
+- ❌ X mark: Failed tasks
+- ⏳ Hourglass: Pending tasks
+- ❗ Exclamation mark: Critical error messages
 
 ## Safety Notes
 - Only run against domains you have permission to test

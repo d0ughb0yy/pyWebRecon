@@ -15,20 +15,20 @@ pyWebRecon automates the subdomain discovery process by orchestrating multiple i
 
 **Concurrent Execution**
 - Multi-threaded tool execution for performance
-- Live status monitoring with text-based display
-- Real-time progress updates with emoji indicators and timestamps
+- Live status monitoring with emoji indicators and timestamps
+- Real-time progress updates with visual feedback using emojis
 
 ## Installation
 
 ### Prerequisites
 ```bash
 # External tools (install via package manager or GitHub releases)
-subfinder      # Subdomain discovery
-httpx          # HTTP probing
-shuffledns     # DNS bruteforce
-dnsx           # DNS resolution
-anew           # File appending utility
-bbot           # Comprehensive subdomain enumeration
+subfinder # Subdomain discovery
+httpx # HTTP probing
+shuffledns # DNS bruteforce
+dnsx # DNS resolution
+anew # File appending utility
+bbot # Comprehensive subdomain enumeration
 ```
 
 ### Python Dependencies
@@ -51,8 +51,8 @@ python3 pywebrecon.py -d example.com -w /usr/share/seclists/Discovery/DNS/subdom
 
 # Multiple wordlists (combined into single shuffledns process)
 python3 pywebrecon.py -d example.com \
-  -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt \
-     /usr/share/seclists/Discovery/DNS/subdomains-top1million-20000.txt
+-w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt \
+/usr/share/seclists/Discovery/DNS/subdomains-top1million-20000.txt
 
 # Three or more wordlists
 python3 pywebrecon.py -d example.com -w wl1.txt wl2.txt wl3.txt
@@ -61,10 +61,11 @@ python3 pywebrecon.py -d example.com -w wl1.txt wl2.txt wl3.txt
 ## Technical Highlights
 
 **Key Implementation Details:**
-- **Live Status Display**: Uses Rich's `Live` display with text-based status updates
+- **Live Status Display**: Uses Rich's `Live` display with emoji indicators for pending (⏳), completed (✅), and failed (❌) tasks
 - **Error Resilience**: Tools raise exceptions on failure; caught and displayed without crashing pipeline
 - **Memory Efficient**: Streams tool outputs directly to files, minimal in-memory data storage
 - **Rate Limiting**: httpx configured with `-rl 50` to be respectful to target infrastructure
+- **Emoji System**: Uses ✅ for info messages, ❗ for errors, ⏳ for pending tasks, and ❌ for failed tasks
 
 ## Why This Project?
 
