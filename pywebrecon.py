@@ -65,6 +65,8 @@ Examples:
     # Stage 2: Process subdomains (resolve and scan)
     if all_subdomains:
         processingSubdomains(target_domain, all_subdomains)
+    else:
+        console.print("[yellow]No subdomains discovered by any enumeration tool[/yellow]")
 
     console.print()
     info(f"Scan complete. Results saved to {target_domain}/domain-recon/")

@@ -100,33 +100,44 @@ def shufflednsExec(target, wordlist):
     resolvers = os.path.expanduser("~/.config/shuffledns/resolvers.txt")
     abs_resolvers = os.path.abspath(resolvers)
 
-    result = subprocess.run(
-        [
-            "docker",
-            "run",
-            "--rm",
-            "--name",
-            "shuffledns",
-            "-v",
-            f"{abs_wordlist}:{abs_wordlist}:ro",
-            "-v",
-            f"{abs_resolvers}:{abs_resolvers}:ro",
-            "projectdiscovery/shuffledns:latest",
-            "-d",
-            target,
-            "-w",
-            abs_wordlist,
-            "-r",
-            abs_resolvers,
-            "-silent",
-            "-t",
-            "1000",
-        ],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        timeout=1800,
-    )
+    try:
+        result = subprocess.run(
+            [
+                "docker",
+                "run",
+                "--rm",
+                "--name",
+                "shuffledns",
+                "-v",
+                f"{abs_wordlist}:{abs_wordlist}:ro",
+                "-v",
+                f"{abs_resolvers}:{abs_resolvers}:ro",
+                "projectdiscovery/shuffledns:latest",
+                "-d",
+                target,
+                "-w",
+                abs_wordlist,
+                "-r",
+                abs_resolvers,
+                "-silent",
+                "-t",
+                "1000",
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=28800,
+        )
+    except subprocess.TimeoutExpired:
+        subprocess.run(
+            ["docker", "kill", "shuffledns"],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+        raise Exception(
+            "shuffledns timed out — try using smaller wordlists "
+            "or fewer wordlist files"
+        )
+
     if result.returncode != 0:
         raise Exception(f"shuffledns failed: {result.stderr}")
 

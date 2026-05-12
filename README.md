@@ -44,9 +44,9 @@ pip install -r requirements.txt
 - `blacklanternsecurity/bbot:latest` — Comprehensive subdomain enumeration
 
 ### Required Local Files
-- `~/.config/subfinder/config.yaml` — API keys for subfinder
-- `~/.config/shuffledns/resolvers.txt` — DNS resolvers for shuffledns (Won't run without it)
-- `~/.config/bbot/bbot.yml` + `~/.config/bbot/secrets.yml` — API keys for bbot
+- `~/.config/subfinder/config.yaml` — API keys for subfinder ([config docs](https://docs.projectdiscovery.io/opensource/subfinder/install))
+- `~/.config/shuffledns/resolvers.txt` — DNS resolvers list, one IP per line ([resolvers reference](https://github.com/trickest/resolvers))
+- `~/.config/bbot/bbot.yml` + `~/.config/bbot/secrets.yml` — API keys for bbot ([config docs](https://www.blacklanternsecurity.com/bbot/Stable/scanning/configuration/))
 
 ## Usage
 

@@ -98,3 +98,5 @@ def processingSubdomains(target_domain, all_subdomains):
             "httpx": (httpxExec, (resolved_domains, target_domain, "httpx_scan.txt"))
         }
         runToolsParallel(tools_httpx)
+    else:
+        console.print("[yellow]No subdomains resolved — skipping HTTP probe[/yellow]")
