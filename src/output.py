@@ -5,6 +5,7 @@ from rich.text import Text
 from rich.console import Group
 from datetime import datetime
 import concurrent.futures
+import time
 
 console = Console()
 
@@ -34,7 +35,6 @@ def runToolsParallel(tools_dict):
     tool_names = list(tools_dict.keys())
     live_status = LiveStatus(tool_names)
     results = {}
-    errors = {}
 
     with Live(live_status, refresh_per_second=4, transient=False) as live:
         def runTool(tool_name, tool_func, tool_args):
@@ -47,7 +47,6 @@ def runToolsParallel(tools_dict):
             except Exception as e:
                 timestamp = datetime.now().strftime("%H:%M:%S")
                 live_status.updateStatus(tool_name, f"❌ {tool_name} FAILED {timestamp}", "red")
-                errors[tool_name] = str(e)
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=len(tools_dict)) as executor:
             futures = {
@@ -56,13 +55,8 @@ def runToolsParallel(tools_dict):
             }
             concurrent.futures.wait(futures)
 
-        if errors:
-            console.print()
-            console.print("[dim]──────────────────────────────────────────[/dim]")
-            console.print("[bold]Execution Summary:[/bold]")
-            for tool_name, error_msg in errors.items():
-                console.print(f"[red]❗[/red] {tool_name}: {error_msg}")
-            console.print()
+        time.sleep(0.25)
+        live.refresh()
 
         return results
 
@@ -70,8 +64,3 @@ def runToolsParallel(tools_dict):
 def info(msg: str):
     """✅ style - green bold"""
     console.print(f"[bold green]✅[/bold green] {msg}")
-
-
-def error(msg: str):
-    """❗ style - red bold"""
-    console.print(f"[bold red]❗[/bold red] {msg}")
