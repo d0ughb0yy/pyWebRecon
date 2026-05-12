@@ -304,11 +304,11 @@ def crtshRequest(target_domain, max_retries=5):
 
             return subdomains
 
-        except (HTTPError, URLError, json.JSONDecodeError) as e:
+        except (HTTPError, URLError, json.JSONDecodeError):
             if attempt < max_retries:
                 backoff = 2**attempt
                 time.sleep(backoff)
             else:
                 raise
-        except Exception as e:
+        except Exception:
             raise
