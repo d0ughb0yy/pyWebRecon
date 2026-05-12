@@ -33,7 +33,7 @@ Examples:
 """
     )
     parser.add_argument("-d", "--domain", required=True, help="Target domain")
-    parser.add_argument("-w", "--wordlist", nargs="+", required=True, help="Shuffledns wordlist path(s) (one or more)")
+    parser.add_argument("-w", "--wordlist", nargs="+", required=False, default=None, help="Shuffledns wordlist path(s) (one or more)")
 
     args = parser.parse_args()
     
@@ -45,13 +45,14 @@ Examples:
     if not domain_pattern.match(target_domain):
         parser.error(f"invalid domain format: {target_domain}")
 
-    for wl in wordlists:
-        if not os.path.exists(wl):
-            parser.error(f"wordlist file not found: {wl}")
-        if not os.access(wl, os.R_OK):
-            parser.error(f"wordlist file not readable: {wl}")
-        if os.path.getsize(wl) == 0:
-            parser.error(f"wordlist file is empty: {wl}")
+    if wordlists:
+        for wl in wordlists:
+            if not os.path.exists(wl):
+                parser.error(f"wordlist file not found: {wl}")
+            if not os.access(wl, os.R_OK):
+                parser.error(f"wordlist file not readable: {wl}")
+            if os.path.getsize(wl) == 0:
+                parser.error(f"wordlist file is empty: {wl}")
 
     print(BANNER)
 

@@ -65,9 +65,9 @@ def dnsxExec(domains, target_domain, output_filename):
                 "--user",
                 DOCKER_USER,
                 "-v",
-                f"{abs_input}:{abs_input}:ro",
+                f"{abs_input}:{abs_input}:ro,z",
                 "-v",
-                f"{abs_output_dir}:{abs_output_dir}",
+                f"{abs_output_dir}:{abs_output_dir}:z",
                 "projectdiscovery/dnsx:latest",
                 "-l",
                 abs_input,
@@ -109,9 +109,9 @@ def shufflednsExec(target, wordlist):
                 "--name",
                 "shuffledns",
                 "-v",
-                f"{abs_wordlist}:{abs_wordlist}:ro",
+                f"{abs_wordlist}:{abs_wordlist}:ro,z",
                 "-v",
-                f"{abs_resolvers}:{abs_resolvers}:ro",
+                f"{abs_resolvers}:{abs_resolvers}:ro,z",
                 "projectdiscovery/shuffledns:latest",
                 "-d",
                 target,
@@ -163,7 +163,7 @@ def subfinderExec(target_domain):
     ]
     if os.path.exists(config_path):
         abs_config = os.path.abspath(config_path)
-        cmd += ["-v", f"{abs_config}:/root/.config/subfinder/config.yaml:ro"]
+        cmd += ["-v", f"{abs_config}:/root/.config/subfinder/config.yaml:ro,z"]
     cmd += [
         "projectdiscovery/subfinder:latest",
         "-d",
@@ -214,9 +214,9 @@ def httpxExec(domains, target_domain, output_filename):
                 "--user",
                 DOCKER_USER,
                 "-v",
-                f"{abs_input}:{abs_input}:ro",
+                f"{abs_input}:{abs_input}:ro,z",
                 "-v",
-                f"{abs_output_dir}:{abs_output_dir}",
+                f"{abs_output_dir}:{abs_output_dir}:z",
                 "projectdiscovery/httpx:latest",
                 "-silent",
                 "-l",
@@ -254,16 +254,18 @@ def bbotExec(target_domain):
     cmd = ["docker", "run", "--rm", "--name", "bbot"]
 
     os.makedirs(bbot_dir, exist_ok=True)
-    cmd += ["-v", f"{os.path.abspath(bbot_dir)}:/root/.bbot"]
+    cmd += ["-v", f"{os.path.abspath(bbot_dir)}:/root/.bbot:z"]
 
     if os.path.exists(config_dir):
-        cmd += ["-v", f"{os.path.abspath(config_dir)}:/root/.config/bbot"]
+        cmd += ["-v", f"{os.path.abspath(config_dir)}:/root/.config/bbot:z"]
 
     cmd += [
         "blacklanternsecurity/bbot:latest",
+        "-n", target_domain,
         "-t", target_domain,
         "-p", "subdomain-enum",
         "-rf", "passive",
+        "-o", "/tmp/bbot-scan",
         "-s",
         "--brief",
     ]
