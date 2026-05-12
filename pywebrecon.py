@@ -2,6 +2,7 @@
 
 import re
 from src.assets import subdomainEnumeration, processingSubdomains
+from src.commands import pullDockerImages
 from src.output import info, console
 import os
 import argparse
@@ -53,6 +54,8 @@ Examples:
             parser.error(f"wordlist file is empty: {wl}")
 
     print(BANNER)
+
+    pullDockerImages()
     
     os.makedirs(f"{target_domain}/domain-recon", exist_ok=True)
 

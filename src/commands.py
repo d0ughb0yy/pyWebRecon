@@ -9,6 +9,38 @@ from urllib.request import Request, urlopen
 
 DOCKER_USER = f"{os.getuid()}:{os.getgid()}"
 
+REQUIRED_IMAGES = [
+    "projectdiscovery/subfinder:latest",
+    "projectdiscovery/shuffledns:latest",
+    "projectdiscovery/dnsx:latest",
+    "projectdiscovery/httpx:latest",
+    "blacklanternsecurity/bbot:latest",
+]
+
+
+def pullDockerImages():
+    missing = []
+    for image in REQUIRED_IMAGES:
+        result = subprocess.run(
+            ["docker", "image", "inspect", image],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+        if result.returncode != 0:
+            missing.append(image)
+
+    if missing:
+        print("\nPulling required Docker images (this may take a while depending on your connection)...")
+        for image in missing:
+            print(f"  Pulling {image}...")
+            result = subprocess.run(
+                ["docker", "pull", image],
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+            )
+            if result.returncode != 0:
+                print(f"  Failed to pull {image}: {result.stderr.strip()}")
+                raise Exception(f"Docker image pull failed: {image}")
+        print("All images ready!\n")
+
 
 def dnsxExec(domains, target_domain, output_filename):
     """Resolve subdomains with dnsx via Docker and return resolved domains as a set."""
