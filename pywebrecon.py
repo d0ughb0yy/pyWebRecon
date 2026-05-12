@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-from src.assets import subdomainEnumeration, processingSubdomains, cleanup
+import re
+from src.assets import subdomainEnumeration, processingSubdomains
 from src.output import info, console
 import os
 import argparse
@@ -39,7 +40,6 @@ Examples:
     wordlists = args.wordlist
 
     # Validate domain format
-    import re
     domain_pattern = re.compile(r'^(?!-)[A-Za-z0-9-]{1,63}(?<!-)(\.(?!-)[A-Za-z0-9-]{1,63}(?<!-))*$')
     if not domain_pattern.match(target_domain):
         parser.error(f"invalid domain format: {target_domain}")
@@ -64,5 +64,4 @@ Examples:
         processingSubdomains(target_domain, all_subdomains)
 
     console.print()
-    cleanup(target_domain)
     info(f"Scan complete. Results saved to {target_domain}/domain-recon/")

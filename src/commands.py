@@ -1,14 +1,10 @@
 import subprocess
-import shutil
 from urllib.request import urlopen, Request
 from urllib.error import URLError, HTTPError
 from pathlib import Path
 import json
 import time
 import tempfile
-import uuid
-import os
-from src.output import error
 
 
 def dnsxExec(domains, target_domain, output_filename):
@@ -55,7 +51,7 @@ def shufflednsExec(target, wordlist):
     Uses shuffledns to perform DNS bruteforce with the provided wordlist.
     Captures stdout directly instead of writing to file.
     """
-    resolvers = "/home/d0b0/.config/shuffledns/resolvers.txt"
+    resolvers = str(Path.home() / ".config/shuffledns/resolvers.txt")
     result = subprocess.run(
         ["shuffledns", "-d", target, "-w", wordlist, "-r", resolvers, "-mode", "bruteforce",
          "-silent", "-nc", "-t", "1000"],
@@ -134,51 +130,6 @@ def httpxExec(domains, target_domain, output_filename):
             raise Exception(f"httpx failed: {stderr}")
     
     return set()
-
-
-def bbotExec(target_domain):
-    """Run bbot subdomain enumeration (passive only) and return subdomains as a set.
-    
-    Uses bbot's -o flag to write to a temporary directory, then reads the
-    subdomains output file and cleans up the directory.
-    """
-    # Create temporary directory path in target directory
-    temp_dir = f"{target_domain}/domain-recon/bbot_tmp_{uuid.uuid4().hex[:8]}"
-    
-    try:
-        result = subprocess.run(
-            ["bbot", "-t", target_domain, "-p", "subdomain-enum",
-             "-rf", "passive",
-             "-n", target_domain, "-om", "subdomains",
-             "-o", temp_dir, "-y", "-s"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.PIPE,
-            timeout=1800
-        )
-        if result.returncode != 0:
-            stderr = result.stderr.decode() if isinstance(result.stderr, bytes) else result.stderr
-            raise Exception(f"bbot failed: {stderr}")
-        
-        # Read subdomains from BBOT output directory
-        subdomains = set()
-        bbot_output = Path(temp_dir) / "subdomains.txt"
-        
-        if bbot_output.exists():
-            with open(bbot_output, 'r') as f:
-                for line in f:
-                    line = line.strip()
-                    if line:
-                        subdomains.add(line)
-        
-        return subdomains
-    
-    finally:
-        # Clean up temporary directory
-        if Path(temp_dir).exists():
-            try:
-                shutil.rmtree(temp_dir)
-            except Exception:
-                pass
 
 
 def crtshRequest(target_domain, max_retries=5):

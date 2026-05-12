@@ -9,7 +9,7 @@ pyWebRecon automates the subdomain discovery process by orchestrating multiple i
 ## Key Features
 
 **Multi-Tool Orchestration**
-- Integrates 5+ security tools (subfinder, httpx, shuffledns, dnsx, bbot, crt.sh API)
+- Integrates 5 security tools (subfinder, httpx, shuffledns, dnsx, crt.sh API)
 - Handles tool dependencies and execution order automatically
 - Intelligent error handling with per-tool status tracking
 
@@ -27,8 +27,6 @@ subfinder # Subdomain discovery
 httpx # HTTP probing
 shuffledns # DNS bruteforce
 dnsx # DNS resolution
-anew # File appending utility
-bbot # Comprehensive subdomain enumeration
 ```
 
 ### Python Dependencies
@@ -63,7 +61,7 @@ python3 pywebrecon.py -d example.com -w wl1.txt wl2.txt wl3.txt
 **Key Implementation Details:**
 - **Live Status Display**: Uses Rich's `Live` display with emoji indicators for pending (⏳), completed (✅), and failed (❌) tasks
 - **Error Resilience**: Tools raise exceptions on failure; caught and displayed without crashing pipeline
-- **Memory Efficient**: Streams tool outputs directly to files, minimal in-memory data storage
+- **Memory Efficient**: Collects tool outputs as in-memory sets for fast aggregation, final results written to disk
 - **Rate Limiting**: httpx configured with `-rl 50` to be respectful to target infrastructure
 - **Emoji System**: Uses ✅ for info messages, ❗ for errors, ⏳ for pending tasks, and ❌ for failed tasks
 

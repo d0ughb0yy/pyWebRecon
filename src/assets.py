@@ -1,18 +1,15 @@
-from pathlib import Path
 import tempfile
 import os
-import shutil
-from src.commands import crtshRequest, subfinderExec, bbotExec, shufflednsExec, dnsxExec, httpxExec
-from src.output import runToolsParallel, error, console
+from src.commands import crtshRequest, subfinderExec, shufflednsExec, dnsxExec, httpxExec
+from src.output import runToolsParallel, console
 
 
 def subdomainEnumeration(target_domain, wordlists):
-    """Passive and active gathering workflow using crtsh, subfinder, shuffledns, and bbot.
+    """Passive and active gathering workflow using crtsh, subfinder, and shuffledns.
     
     This function runs multiple subdomain enumeration tools concurrently:
     - crt.sh: Certificate transparency logs
     - subfinder: Passive subdomain discovery
-    - bbot: Multi-source passive enumeration
     - shuffledns: DNS bruteforce with combined wordlists (single process)
     
     Args:
@@ -45,7 +42,6 @@ def subdomainEnumeration(target_domain, wordlists):
         tools = {
             "crt.sh": (crtshRequest, (target_domain,)),
             "subfinder": (subfinderExec, (target_domain,)),
-            "bbot": (bbotExec, (target_domain,)),
         }
         
         if combined_wordlist_path:
@@ -94,14 +90,3 @@ def processingSubdomains(target_domain, all_subdomains):
         }
         runToolsParallel(tools_httpx)
 
-
-def cleanup(target_domain):
-    """Cleanup temporary files and external scan directories.
-    """
-    # Clean up BBOT scan directory in home directory
-    bbotScanDir = Path.home() / f".bbot/scans/{target_domain}"
-    if bbotScanDir.exists():
-        try:
-            shutil.rmtree(bbotScanDir)
-        except Exception as e:
-            error(f"Error deleting BBOT scan directory: {e}")

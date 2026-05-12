@@ -58,6 +58,7 @@ def runToolsParallel(tools_dict):
 
         if errors:
             console.print()
+            console.print("[dim]──────────────────────────────────────────[/dim]")
             console.print("[bold]Execution Summary:[/bold]")
             for tool_name, error_msg in errors.items():
                 console.print(f"[red]❗[/red] {tool_name}: {error_msg}")
