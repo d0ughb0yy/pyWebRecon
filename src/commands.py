@@ -23,18 +23,23 @@ def pullDockerImages():
     for image in REQUIRED_IMAGES:
         result = subprocess.run(
             ["docker", "image", "inspect", image],
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
         )
         if result.returncode != 0:
             missing.append(image)
 
     if missing:
-        print("\nPulling required Docker images (this may take a while depending on your connection)...")
+        print(
+            "\nPulling required Docker images (this may take a while depending on your connection)..."
+        )
         for image in missing:
             print(f"  Pulling {image}...")
             result = subprocess.run(
                 ["docker", "pull", image],
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
             )
             if result.returncode != 0:
                 print(f"  Failed to pull {image}: {result.stderr.strip()}")
@@ -131,11 +136,11 @@ def shufflednsExec(target, wordlist):
     except subprocess.TimeoutExpired:
         subprocess.run(
             ["docker", "kill", "shuffledns"],
-            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
         )
         raise Exception(
-            "shuffledns timed out — try using smaller wordlists "
-            "or fewer wordlist files"
+            "shuffledns timed out — try using smaller wordlists or fewer wordlist files"
         )
 
     if result.returncode != 0:
@@ -261,11 +266,17 @@ def bbotExec(target_domain):
 
     cmd += [
         "blacklanternsecurity/bbot:latest",
-        "-n", target_domain,
-        "-t", target_domain,
-        "-p", "subdomain-enum",
-        "-rf", "passive",
-        "-o", "/tmp/bbot-scan",
+        "-n",
+        target_domain,
+        "-t",
+        target_domain,
+        "-p",
+        "subdomain-enum",
+        "-rf",
+        "passive",
+        "-o",
+        "/tmp/bbot-scan",
+        "-y",
         "-s",
         "--brief",
     ]
