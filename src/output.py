@@ -1,11 +1,12 @@
 """Simple console output helpers for pyWebRecon."""
-from rich.console import Console
-from rich.live import Live
-from rich.text import Text
-from rich.console import Group
-from datetime import datetime
+
 import concurrent.futures
 import time
+from datetime import datetime
+
+from rich.console import Console, Group
+from rich.live import Live
+from rich.text import Text
 
 console = Console()
 
@@ -37,18 +38,27 @@ def runToolsParallel(tools_dict):
     results = {}
 
     with Live(live_status, refresh_per_second=4, transient=False) as live:
+
         def runTool(tool_name, tool_func, tool_args):
             try:
-                live_status.updateStatus(tool_name, f"⏳ {tool_name} running...", "cyan")
+                live_status.updateStatus(
+                    tool_name, f"⏳ {tool_name} running...", "cyan"
+                )
                 result = tool_func(*tool_args)
                 timestamp = datetime.now().strftime("%H:%M:%S")
-                live_status.updateStatus(tool_name, f"✅ {tool_name} COMPLETED {timestamp}", "green")
+                live_status.updateStatus(
+                    tool_name, f"✅ {tool_name} COMPLETED {timestamp}", "green"
+                )
                 results[tool_name] = result
             except Exception as e:
                 timestamp = datetime.now().strftime("%H:%M:%S")
-                live_status.updateStatus(tool_name, f"❌ {tool_name} FAILED {timestamp}", "red")
+                live_status.updateStatus(
+                    tool_name, f"❌ {tool_name} FAILED {timestamp}", "red"
+                )
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=len(tools_dict)) as executor:
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=len(tools_dict)
+        ) as executor:
             futures = {
                 executor.submit(runTool, tool_name, tool_func, tool_args): tool_name
                 for tool_name, (tool_func, tool_args) in tools_dict.items()
