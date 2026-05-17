@@ -138,6 +138,8 @@ def shufflednsExec(target, wordlist):
             text=True,
             timeout=GLOBAL_TIMEOUT,
         )
+        if result.returncode != 0:
+            raise Exception(f"shuffledns failed: {result.stderr}")
     except subprocess.TimeoutExpired:
         subprocess.run(
             ["docker", "kill", "shuffledns"],
@@ -147,9 +149,6 @@ def shufflednsExec(target, wordlist):
         raise Exception(
             "shuffledns timed out — try using smaller wordlists or fewer wordlist files"
         )
-
-    if result.returncode != 0:
-        raise Exception(f"shuffledns failed: {result.stderr}")
 
     subdomains = set()
     for line in result.stdout.splitlines():
@@ -295,21 +294,26 @@ def bbotExec(target_domain):
         "--brief",
     ]
 
+    # Run the container – capture both success and timeout cases separately
+    stdout: str = ""
     try:
-        result = subprocess.run(
+        proc = subprocess.run(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=GLOBAL_TIMEOUT
         )
+        stdout = proc.stdout
+        # Normal exit – check return code
+        if proc.returncode != 0:
+            console.print(
+                f"[yellow]bbot exited with code {proc.returncode} – continuing with parsed output.[/yellow]"
+            )
     except subprocess.TimeoutExpired as e:
+        # Timeout – Docker killed the container after 10 h; still try to parse any output it sent
         console.print("[yellow]bbot timed out – parsing partial output.[/yellow]")
-        result = e
-    if result.returncode != 0:
-        # bbot may exit non‑zero yet still produce useful stdout; log a warning but continue parsing
-        console.print(
-            f"[red]bbot exited with code {result.returncode} – continuing with parsed output.[/red]"
-        )
+        # e.stdout (or e.output) holds whatever was captured before the kill
+        stdout = (getattr(e, "stdout", None) or getattr(e, "output", None) or "")
 
     subdomains = set()
-    for line in result.stdout.splitlines():
+    for line in stdout.splitlines():
         line = line.strip().lower()
         if line:
             subdomains.add(line)
