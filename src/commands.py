@@ -4,9 +4,10 @@ import subprocess
 import tempfile
 import time
 from pathlib import Path
-from src.output import console
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
+
+from src.output import console
 
 DOCKER_USER = f"{os.getuid()}:{os.getgid()}"
 
@@ -244,11 +245,13 @@ def httpxExec(domains, target_domain, output_filename):
             ],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.PIPE,
-            timeout=1800,
+            timeout=28800,
         )
     if result.returncode != 0:
         # httpx may return a non‑zero status but still write the output file; warn the user
-        console.print(f"[yellow]httpx exited with code {result.returncode} – output file may still be valid.[/yellow]")
+        console.print(
+            f"[yellow]httpx exited with code {result.returncode} – output file may still be valid.[/yellow]"
+        )
 
     return set()
 
@@ -259,7 +262,11 @@ def bbotExec(target_domain):
     config_dir = os.path.expanduser("~/.config/bbot")
 
     # Ensure any previous container named 'bbot' is removed to avoid name collisions (Docker exit code 125)
-    subprocess.run(["docker", "rm", "-f", "bbot"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.run(
+        ["docker", "rm", "-f", "bbot"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
     cmd = ["docker", "run", "--rm"]
 
     os.makedirs(bbot_dir, exist_ok=True)
@@ -286,11 +293,13 @@ def bbotExec(target_domain):
     ]
 
     result = subprocess.run(
-        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=3600
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=28800
     )
     if result.returncode != 0:
         # bbot may exit non‑zero yet still produce useful stdout; log a warning but continue parsing
-        console.print(f"[yellow]bbot exited with code {result.returncode} – continuing with parsed output.[/yellow]")
+        console.print(
+            f"[yellow]bbot exited with code {result.returncode} – continuing with parsed output.[/yellow]"
+        )
 
     subdomains = set()
     for line in result.stdout.splitlines():
