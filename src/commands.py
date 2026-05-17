@@ -250,7 +250,7 @@ def httpxExec(domains, target_domain, output_filename):
     if result.returncode != 0:
         # httpx may return a non‑zero status but still write the output file; warn the user
         console.print(
-            f"[yellow]httpx exited with code {result.returncode} – output file may still be valid.[/yellow]"
+            f"[red]httpx exited with code {result.returncode} – output file may still be valid.[/red]"
         )
 
     return set()
@@ -298,7 +298,7 @@ def bbotExec(target_domain):
     if result.returncode != 0:
         # bbot may exit non‑zero yet still produce useful stdout; log a warning but continue parsing
         console.print(
-            f"[yellow]bbot exited with code {result.returncode} – continuing with parsed output.[/yellow]"
+            f"[red]bbot exited with code {result.returncode} – continuing with parsed output.[/red]"
         )
 
     subdomains = set()
