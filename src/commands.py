@@ -7,6 +7,9 @@ from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+# Global timeout applied to all Docker‑based tools (10 hours)
+GLOBAL_TIMEOUT = 36000  # seconds
+
 from src.output import console
 
 DOCKER_USER = f"{os.getuid()}:{os.getgid()}"
@@ -85,7 +88,7 @@ def dnsxExec(domains, target_domain, output_filename):
             ],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.PIPE,
-            timeout=1800,
+            timeout=GLOBAL_TIMEOUT,
         )
         if result.returncode != 0:
             raise Exception(f"dnsx failed: {result.stderr.decode()}")
@@ -133,7 +136,7 @@ def shufflednsExec(target, wordlist):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
-            timeout=28800,
+            timeout=GLOBAL_TIMEOUT,
         )
     except subprocess.TimeoutExpired:
         subprocess.run(
@@ -184,7 +187,7 @@ def subfinderExec(target_domain):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
-        timeout=1800,
+        timeout=GLOBAL_TIMEOUT,
     )
     if result.returncode != 0:
         raise Exception(f"subfinder failed: {result.stderr}")
@@ -245,7 +248,7 @@ def httpxExec(domains, target_domain, output_filename):
             ],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.PIPE,
-            timeout=28800,
+            timeout=GLOBAL_TIMEOUT,
         )
     if result.returncode != 0:
         # httpx may return a non‑zero status but still write the output file; warn the user
@@ -292,9 +295,13 @@ def bbotExec(target_domain):
         "--brief",
     ]
 
-    result = subprocess.run(
-        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=28800
-    )
+    try:
+        result = subprocess.run(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=GLOBAL_TIMEOUT
+        )
+    except subprocess.TimeoutExpired as e:
+        console.print("[yellow]bbot timed out – parsing partial output.[/yellow]")
+        result = e
     if result.returncode != 0:
         # bbot may exit non‑zero yet still produce useful stdout; log a warning but continue parsing
         console.print(
