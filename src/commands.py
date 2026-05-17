@@ -4,6 +4,7 @@ import subprocess
 import tempfile
 import time
 from pathlib import Path
+from src.output import console
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -245,8 +246,9 @@ def httpxExec(domains, target_domain, output_filename):
             stderr=subprocess.PIPE,
             timeout=1800,
         )
-        if result.returncode != 0:
-            raise Exception(f"httpx failed: {result.stderr.decode()}")
+    if result.returncode != 0:
+        # httpx may return a non‑zero status but still write the output file; warn the user
+        console.print(f"[yellow]httpx exited with code {result.returncode} – output file may still be valid.[/yellow]")
 
     return set()
 
@@ -256,7 +258,9 @@ def bbotExec(target_domain):
     bbot_dir = os.path.expanduser("~/.bbot")
     config_dir = os.path.expanduser("~/.config/bbot")
 
-    cmd = ["docker", "run", "--rm", "--name", "bbot"]
+    # Ensure any previous container named 'bbot' is removed to avoid name collisions (Docker exit code 125)
+    subprocess.run(["docker", "rm", "-f", "bbot"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    cmd = ["docker", "run", "--rm"]
 
     os.makedirs(bbot_dir, exist_ok=True)
     cmd += ["-v", f"{os.path.abspath(bbot_dir)}:/root/.bbot:z"]
@@ -285,7 +289,8 @@ def bbotExec(target_domain):
         cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=3600
     )
     if result.returncode != 0:
-        raise Exception(f"bbot failed: {result.stderr}")
+        # bbot may exit non‑zero yet still produce useful stdout; log a warning but continue parsing
+        console.print(f"[yellow]bbot exited with code {result.returncode} – continuing with parsed output.[/yellow]")
 
     subdomains = set()
     for line in result.stdout.splitlines():
