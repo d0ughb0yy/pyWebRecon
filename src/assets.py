@@ -5,6 +5,7 @@ from src.commands import (
     subfinderExec,
     shufflednsExec,
     bbotExec,
+    waymoreExec,
     dnsxExec,
     httpxExec,
 )
@@ -19,6 +20,7 @@ def subdomainEnumeration(target_domain, wordlists):
     - subfinder: Passive subdomain discovery
     - shuffledns: DNS bruteforce with combined wordlists
     - bbot: Comprehensive subdomain enumeration (passive + active)
+    - waymore: URL discovery from archive sources (outputs to file only)
 
     Args:
         target_domain: Target domain for enumeration
@@ -51,6 +53,7 @@ def subdomainEnumeration(target_domain, wordlists):
             "crt.sh": (crtshRequest, (target_domain,)),
             "subfinder": (subfinderExec, (target_domain,)),
             "bbot": (bbotExec, (target_domain,)),
+            "waymore": (waymoreExec, (target_domain,)),
         }
 
         if combined_wordlist_path:

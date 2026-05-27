@@ -9,8 +9,8 @@ pyWebRecon automates the subdomain discovery process by orchestrating multiple i
 ## Key Features
 
 **Multi-Tool Orchestration**
-- Integrates 6 security tools (subfinder, shuffledns, bbot, dnsx, httpx, crt.sh API)
-- All tools run via Docker containers — zero local dependencies beyond Docker
+- Integrates 7 security tools (subfinder, shuffledns, bbot, dnsx, httpx, crt.sh API, waymore)
+- Most tools run via Docker containers — zero local dependencies beyond Docker and Python
 - Containers are named after their tool (`docker ps` shows `dnsx`, `httpx`, etc.)
 - Handles tool dependencies and execution order automatically
 
@@ -27,6 +27,11 @@ pyWebRecon automates the subdomain discovery process by orchestrating multiple i
 # https://docs.docker.com/engine/install/
 
 # Python 3.9+
+
+# pipx (for waymore installation)
+pip install pipx
+OR
+sudo apt install pipx # Or whatever your package manager is
 ```
 
 ### Python Dependencies
@@ -35,6 +40,12 @@ pip install -r requirements.txt
 ```
 
 *Only requirement: `rich>=13.0.0`*
+
+### Waymore (URL Discovery)
+```bash
+pipx install git+https://github.com/xnl-h4ck3r/waymore.git
+```
+Waymore requires a config file at `~/.config/waymore/config.yml`. On first run, waymore creates this automatically. To customize API keys and filters, edit the config directly (see [waymore docs](https://github.com/xnl-h4ck3r/waymore)).
 
 ### Docker Images (pulled automatically on first run)
 - `projectdiscovery/subfinder:latest` — Passive subdomain discovery
@@ -47,6 +58,7 @@ pip install -r requirements.txt
 - `~/.config/subfinder/config.yaml` — API keys for subfinder ([config docs](https://docs.projectdiscovery.io/opensource/subfinder/install))
 - `~/.config/shuffledns/resolvers.txt` — DNS resolvers list, one IP per line ([resolvers reference](https://github.com/trickest/resolvers))
 - `~/.config/bbot/bbot.yml` + `~/.config/bbot/secrets.yml` — API keys for bbot ([config docs](https://www.blacklanternsecurity.com/bbot/Stable/scanning/configuration/))
+- `~/.config/waymore/config.yml` — waymore config with API keys and filters ([config docs](https://github.com/xnl-h4ck3r/waymore#configyml))
 
 ## Usage
 

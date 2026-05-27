@@ -14,6 +14,7 @@ No test/lint/typecheck framework configured. Validate by running against a test 
 - `~/.config/shuffledns/resolvers.txt` — mounted read-only into shuffledns container
 - `~/.config/bbot/bbot.yml` + `~/.config/bbot/secrets.yml` — mounted read-write into bbot container (bbot writes temp files to config dir)
 - `~/.bbot/` — created if missing, mounted into bbot container to persist cache/wordlists/tools
+- `~/.config/waymore/config.yml` — waymore config with API keys and filters (must be installed via pipx)
 
 ## Key architecture
 
@@ -24,9 +25,10 @@ pywebrecon.py → src/assets.py → src/commands.py (Docker wrappers)
 
 ### Workflow
 
-1. **subdomainEnumeration** (concurrent via `ThreadPoolExecutor`): crt.sh, subfinder, bbot, shuffledns
+1. **subdomainEnumeration** (concurrent via `ThreadPoolExecutor`): crt.sh, subfinder, bbot, shuffledns, waymore
    - Results aggregated into a single `set[str]`
    - bbot runs with `-p subdomain-enum -rf passive` (passive-only, uses API keys from config)
+   - waymore runs in mode `U` (URLs only), outputs to `{domain}/domain-recon/waymore_urls.txt`
 2. **processingSubdomains** (sequential): dnsx → httpx
    - httpx only runs if dnsx resolved at least one domain
 
@@ -37,12 +39,14 @@ pywebrecon.py → src/assets.py → src/commands.py (Docker wrappers)
 - `subfinder`, `shuffledns`, `bbot` do NOT use `--user` (they only emit stdout, no host file writes).
 - Temp input files: `NamedTemporaryFile(delete=True)` for dnsx/httpx input. Combined wordlist for shuffledns uses `delete=False` and is manually `os.unlink()`ed in a `finally` block.
 - bb timeout: 3600s (comprehensive). All others: 1800s.
+- waymore is NOT a Docker tool — it's installed via pipx and runs as a native subprocess. It checks for the `waymore` binary at runtime and raises `FileNotFoundError` if missing.
 
 ### Output files
 
 All written to `{domain}/domain-recon/`:
 - `dnsx_resolved.txt` — resolved subdomains (read back into memory for httpx input)
 - `httpx_scan.txt` — HTTP probe results (written only, not read back)
+- `waymore_urls.txt` — URLs discovered from archive sources (written only, not read back)
 
 ### runToolsParallel contract
 
@@ -67,6 +71,6 @@ Inside the `runTool` closure, exceptions are caught and displayed as red ❌ in 
 
 ## Naming conventions
 
-- Functions: `camelCase` (e.g. `dnsxExec`, `subdomainEnumeration`)
+- Functions: `camelCase` (e.g. `dnsxExec`, `subdomainEnumeration`, `waymoreExec`)
 - Files: `snake_case.py`
 - Imports: stdlib → external (rich) → local (`src.`), absolute only

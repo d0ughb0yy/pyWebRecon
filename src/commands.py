@@ -7,10 +7,10 @@ from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+from src.output import console
+
 # Global timeout applied to all Docker‑based tools (10 hours)
 GLOBAL_TIMEOUT = 36000  # seconds
-
-from src.output import console
 
 DOCKER_USER = f"{os.getuid()}:{os.getgid()}"
 
@@ -298,7 +298,11 @@ def bbotExec(target_domain):
     stdout: str = ""
     try:
         proc = subprocess.run(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=GLOBAL_TIMEOUT
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=GLOBAL_TIMEOUT,
         )
         stdout = proc.stdout
         # Normal exit – check return code
@@ -310,7 +314,7 @@ def bbotExec(target_domain):
         # Timeout – Docker killed the container after 10 h; still try to parse any output it sent
         console.print("[yellow]bbot timed out – parsing partial output.[/yellow]")
         # e.stdout (or e.output) holds whatever was captured before the kill
-        stdout = (getattr(e, "stdout", None) or getattr(e, "output", None) or "")
+        stdout = getattr(e, "stdout", None) or getattr(e, "output", None) or ""
 
     subdomains = set()
     for line in stdout.splitlines():
@@ -319,6 +323,47 @@ def bbotExec(target_domain):
             subdomains.add(line)
 
     return subdomains
+
+
+def waymoreExec(target_domain):
+    """Run waymore URL discovery and return URLs as a set."""
+    # Check if waymore is installed
+    if subprocess.run(["which", "waymore"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode != 0:
+        raise FileNotFoundError(
+            "waymore not installed. Install with: pipx install git+https://github.com/xnl-h4ck3r/waymore.git"
+        )
+
+    output_file = f"{target_domain}/domain-recon/waymore_urls.txt"
+    abs_output_file = os.path.abspath(output_file)
+    abs_output_dir = os.path.abspath(f"{target_domain}/domain-recon")
+    os.makedirs(abs_output_dir, exist_ok=True)
+
+    result = subprocess.run(
+        [
+            "waymore",
+            "-i",
+            target_domain,
+            "-mode",
+            "U",
+            "-oU",
+            abs_output_file,
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        timeout=GLOBAL_TIMEOUT,
+    )
+    if result.returncode != 0:
+        raise Exception(f"waymore failed: {result.stderr}")
+
+    urls = set()
+    if Path(abs_output_file).exists():
+        with open(abs_output_file) as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    urls.add(line)
+    return urls
 
 
 def crtshRequest(target_domain, max_retries=5):
