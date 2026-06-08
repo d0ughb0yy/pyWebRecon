@@ -1,5 +1,6 @@
 import os
 import tempfile
+from urllib.parse import urlparse
 from src.commands import (
     crtshRequest,
     subfinderExec,
@@ -10,6 +11,22 @@ from src.commands import (
     httpxExec,
 )
 from src.output import runToolsParallel, console
+
+
+def urlsToSubdomains(urls: set[str], target_domain: str) -> set[str]:
+    """Extract subdomains from a set of URLs, filtering to the target domain."""
+    subdomains = set()
+    target_domain = target_domain.lower()
+    for url in urls:
+        try:
+            hostname = urlparse(url).hostname
+            if hostname:
+                hostname = hostname.lower()
+                if hostname == target_domain or hostname.endswith(f".{target_domain}"):
+                    subdomains.add(hostname)
+        except Exception:
+            continue
+    return subdomains
 
 
 def subdomainEnumeration(target_domain, wordlists):
@@ -66,7 +83,10 @@ def subdomainEnumeration(target_domain, wordlists):
         all_subdomains = set()
         for tool_name, tool_result in results.items():
             if isinstance(tool_result, set):
-                all_subdomains.update(tool_result)
+                if tool_name == "waymore":
+                    all_subdomains.update(urlsToSubdomains(tool_result, target_domain))
+                else:
+                    all_subdomains.update(tool_result)
 
         return all_subdomains
     finally:
