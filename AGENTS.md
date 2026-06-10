@@ -32,11 +32,12 @@ pywebrecon.py → src/assets.py → src/commands.py (Docker wrappers)
 2. **processingSubdomains** (sequential): dnsx → httpx
    - httpx only runs if dnsx resolved at least one domain
 
-### Docker orchestration quirks
+### Container runtime orchestration quirks
 
-- All containers use `--name <tool>` so they appear in `docker ps`.
-- `dnsx` and `httpx` use `--user $(id -u):$(id -g)` so output files are owned by host user.
-- `subfinder`, `shuffledns`, `bbot` do NOT use `--user` (they only emit stdout, no host file writes).
+- Runtime is auto-detected at startup by calling `detectRuntime()` (`which podman` → podman, else docker). Set in `src/commands.py:RUNTIME`.
+- All containers use `--name <tool>` so they appear in `docker ps` / `podman ps`.
+- `dnsx` and `httpx` use `--userns=keep-id` (podman) or `--user $(id -u):$(id -g)` (docker) so output files are owned by host user.
+- `subfinder`, `shuffledns`, `bbot` do NOT use user namespace flags (they only emit stdout, no host file writes).
 - Temp input files: `NamedTemporaryFile(delete=True)` for dnsx/httpx input. Combined wordlist for shuffledns uses `delete=False` and is manually `os.unlink()`ed in a `finally` block.
 - bb timeout: 3600s (comprehensive). All others: 1800s.
 - waymore is NOT a Docker tool — it's installed via pipx and runs as a native subprocess. It checks for the `waymore` binary at runtime and raises `FileNotFoundError` if missing.
@@ -59,7 +60,7 @@ results = runToolsParallel(tools)  # returns dict[str, set[str]]
 
 Inside the `runTool` closure, exceptions are caught and displayed as red ❌ in the live status. The exception is swallowed (not re-raised) — failures update the display but don't crash the pipeline. The return dict only contains entries for tools that succeeded.
 
-## Docker images
+## Container images (pulled via detected runtime: podman or docker)
 
 | Image | Tool | Purpose |
 |---|---|---|

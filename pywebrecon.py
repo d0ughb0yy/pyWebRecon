@@ -2,7 +2,7 @@
 
 import re
 from src.assets import subdomainEnumeration, processingSubdomains
-from src.commands import pullDockerImages
+from src.commands import pullContainerImages, detectRuntime
 from src.output import info, console
 import os
 import argparse
@@ -56,7 +56,9 @@ Examples:
 
     print(BANNER)
 
-    pullDockerImages()
+    runtime = detectRuntime()
+    console.print(f"[bold cyan]Using container runtime: {runtime}[/bold cyan]")
+    pullContainerImages()
     
     os.makedirs(f"{target_domain}/domain-recon", exist_ok=True)
 

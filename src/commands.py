@@ -9,25 +9,43 @@ from urllib.request import Request, urlopen
 
 from src.output import console
 
-# Global timeout applied to all Docker‑based tools (10 hours)
+# Global timeout applied to all container‑based tools (10 hours)
 GLOBAL_TIMEOUT = 36000  # seconds
 
-DOCKER_USER = f"{os.getuid()}:{os.getgid()}"
+HOST_USER = f"{os.getuid()}:{os.getgid()}"
+
+RUNTIME = "docker"
+
+
+def detectRuntime() -> str:
+    global RUNTIME
+    if subprocess.run(["which", "podman"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
+        RUNTIME = "podman"
+    else:
+        RUNTIME = "docker"
+    return RUNTIME
+
+
+def _containerRunArgs() -> list[str]:
+    if RUNTIME == "podman":
+        return ["--userns=keep-id"]
+    return ["--user", HOST_USER]
+
 
 REQUIRED_IMAGES = [
-    "projectdiscovery/subfinder:latest",
-    "projectdiscovery/shuffledns:latest",
-    "projectdiscovery/dnsx:latest",
-    "projectdiscovery/httpx:latest",
-    "blacklanternsecurity/bbot:latest",
+    "docker.io/projectdiscovery/subfinder:latest",
+    "docker.io/projectdiscovery/shuffledns:latest",
+    "docker.io/projectdiscovery/dnsx:latest",
+    "docker.io/projectdiscovery/httpx:latest",
+    "docker.io/blacklanternsecurity/bbot:latest",
 ]
 
 
-def pullDockerImages():
+def pullContainerImages():
     missing = []
     for image in REQUIRED_IMAGES:
         result = subprocess.run(
-            ["docker", "image", "inspect", image],
+            [RUNTIME, "image", "inspect", image],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
@@ -36,24 +54,24 @@ def pullDockerImages():
 
     if missing:
         print(
-            "\nPulling required Docker images (this may take a while depending on your connection)..."
+            "\nPulling required container images (this may take a while depending on your connection)..."
         )
         for image in missing:
             print(f"  Pulling {image}...")
             result = subprocess.run(
-                ["docker", "pull", image],
+                [RUNTIME, "pull", image],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
             )
             if result.returncode != 0:
                 print(f"  Failed to pull {image}: {result.stderr.strip()}")
-                raise Exception(f"Docker image pull failed: {image}")
+                raise Exception(f"Container image pull failed: {image}")
         print("All images ready!\n")
 
 
 def dnsxExec(domains, target_domain, output_filename):
-    """Resolve subdomains with dnsx via Docker and return resolved domains as a set."""
+    """Resolve subdomains with dnsx via container and return resolved domains as a set."""
     output_file = f"{target_domain}/domain-recon/{output_filename}"
     abs_output_file = os.path.abspath(output_file)
     abs_output_dir = os.path.abspath(f"{target_domain}/domain-recon")
@@ -67,18 +85,13 @@ def dnsxExec(domains, target_domain, output_filename):
         abs_input = os.path.abspath(input_tmp.name)
         result = subprocess.run(
             [
-                "docker",
-                "run",
-                "--rm",
-                "--name",
-                "dnsx",
-                "--user",
-                DOCKER_USER,
+                RUNTIME, "run", "--rm", "--name", "dnsx",
+                *_containerRunArgs(),
                 "-v",
                 f"{abs_input}:{abs_input}:ro,z",
                 "-v",
                 f"{abs_output_dir}:{abs_output_dir}:z",
-                "projectdiscovery/dnsx:latest",
+                "docker.io/projectdiscovery/dnsx:latest",
                 "-l",
                 abs_input,
                 "-o",
@@ -100,12 +113,15 @@ def dnsxExec(domains, target_domain, output_filename):
                 line = line.strip()
                 if line:
                     resolved_domains.add(line)
+        with open(abs_output_file, "w") as f:
+            for domain in sorted(resolved_domains):
+                f.write(f"{domain}\n")
 
     return resolved_domains
 
 
 def shufflednsExec(target, wordlist):
-    """Run shuffledns DNS bruteforce via Docker and return subdomains as a set."""
+    """Run shuffledns DNS bruteforce via container and return subdomains as a set."""
     abs_wordlist = os.path.abspath(wordlist)
     resolvers = os.path.expanduser("~/.config/shuffledns/resolvers.txt")
     abs_resolvers = os.path.abspath(resolvers)
@@ -113,16 +129,13 @@ def shufflednsExec(target, wordlist):
     try:
         result = subprocess.run(
             [
-                "docker",
-                "run",
-                "--rm",
-                "--name",
+                RUNTIME, "run", "--rm", "--name",
                 "shuffledns",
                 "-v",
                 f"{abs_wordlist}:{abs_wordlist}:ro,z",
                 "-v",
                 f"{abs_resolvers}:{abs_resolvers}:ro,z",
-                "projectdiscovery/shuffledns:latest",
+                "docker.io/projectdiscovery/shuffledns:latest",
                 "-d",
                 target,
                 "-w",
@@ -142,7 +155,7 @@ def shufflednsExec(target, wordlist):
             raise Exception(f"shuffledns failed: {result.stderr}")
     except subprocess.TimeoutExpired:
         subprocess.run(
-            ["docker", "kill", "shuffledns"],
+            [RUNTIME, "kill", "shuffledns"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
@@ -160,21 +173,18 @@ def shufflednsExec(target, wordlist):
 
 
 def subfinderExec(target_domain):
-    """Run subfinder subdomain discovery via Docker and return subdomains as a set."""
+    """Run subfinder subdomain discovery via container and return subdomains as a set."""
     config_path = os.path.expanduser("~/.config/subfinder/config.yaml")
 
     cmd = [
-        "docker",
-        "run",
-        "--rm",
-        "--name",
+        RUNTIME, "run", "--rm", "--name",
         "subfinder",
     ]
     if os.path.exists(config_path):
         abs_config = os.path.abspath(config_path)
         cmd += ["-v", f"{abs_config}:/root/.config/subfinder/config.yaml:ro,z"]
     cmd += [
-        "projectdiscovery/subfinder:latest",
+        "docker.io/projectdiscovery/subfinder:latest",
         "-d",
         target_domain,
         "-all",
@@ -201,7 +211,7 @@ def subfinderExec(target_domain):
 
 
 def httpxExec(domains, target_domain, output_filename):
-    """Probe subdomains with httpx via Docker and write results to file."""
+    """Probe subdomains with httpx via container and write results to file."""
     output_file = f"{target_domain}/domain-recon/{output_filename}"
     abs_output_file = os.path.abspath(output_file)
     abs_output_dir = os.path.abspath(f"{target_domain}/domain-recon")
@@ -215,18 +225,13 @@ def httpxExec(domains, target_domain, output_filename):
         abs_input = os.path.abspath(input_tmp.name)
         result = subprocess.run(
             [
-                "docker",
-                "run",
-                "--rm",
-                "--name",
-                "httpx",
-                "--user",
-                DOCKER_USER,
+                RUNTIME, "run", "--rm", "--name", "httpx",
+                *_containerRunArgs(),
                 "-v",
                 f"{abs_input}:{abs_input}:ro,z",
                 "-v",
                 f"{abs_output_dir}:{abs_output_dir}:z",
-                "projectdiscovery/httpx:latest",
+                "docker.io/projectdiscovery/httpx:latest",
                 "-silent",
                 "-l",
                 abs_input,
@@ -259,17 +264,17 @@ def httpxExec(domains, target_domain, output_filename):
 
 
 def bbotExec(target_domain):
-    """Run BBot subdomain enumeration via Docker and return subdomains as a set."""
+    """Run BBot subdomain enumeration via container and return subdomains as a set."""
     bbot_dir = os.path.expanduser("~/.bbot")
     config_dir = os.path.expanduser("~/.config/bbot")
 
-    # Ensure any previous container named 'bbot' is removed to avoid name collisions (Docker exit code 125)
+    # Ensure any previous container named 'bbot' is removed to avoid name collisions (container runtime exit code 125)
     subprocess.run(
-        ["docker", "rm", "-f", "bbot"],
+        [RUNTIME, "rm", "-f", "bbot"],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
-    cmd = ["docker", "run", "--rm"]
+    cmd = [RUNTIME, "run", "--rm", "--name", "bbot", "--user", "root"]
 
     os.makedirs(bbot_dir, exist_ok=True)
     cmd += ["-v", f"{os.path.abspath(bbot_dir)}:/root/.bbot:z"]
@@ -278,7 +283,7 @@ def bbotExec(target_domain):
         cmd += ["-v", f"{os.path.abspath(config_dir)}:/root/.config/bbot:z"]
 
     cmd += [
-        "blacklanternsecurity/bbot:latest",
+        "docker.io/blacklanternsecurity/bbot:latest",
         "-n",
         target_domain,
         "-t",
@@ -311,7 +316,7 @@ def bbotExec(target_domain):
                 f"[yellow]bbot exited with code {proc.returncode} – continuing with parsed output.[/yellow]"
             )
     except subprocess.TimeoutExpired as e:
-        # Timeout – Docker killed the container after 10 h; still try to parse any output it sent
+        # Timeout – runtime killed the container after 10 h; still try to parse any output it sent
         console.print("[yellow]bbot timed out – parsing partial output.[/yellow]")
         # e.stdout (or e.output) holds whatever was captured before the kill
         stdout = getattr(e, "stdout", None) or getattr(e, "output", None) or ""
@@ -319,7 +324,7 @@ def bbotExec(target_domain):
     subdomains = set()
     for line in stdout.splitlines():
         line = line.strip().lower()
-        if line:
+        if line and not any(c in line for c in (' ', '\t')):
             subdomains.add(line)
 
     return subdomains
