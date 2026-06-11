@@ -4,7 +4,7 @@ from urllib.parse import urlparse
 from src.commands import (
     crtshRequest,
     subfinderExec,
-    shufflednsExec,
+    purednsExec,
     bbotExec,
     waymoreExec,
     dnsxExec,
@@ -35,13 +35,13 @@ def subdomainEnumeration(target_domain, wordlists):
     This function runs multiple subdomain enumeration tools concurrently:
     - crt.sh: Certificate transparency logs
     - subfinder: Passive subdomain discovery
-    - shuffledns: DNS bruteforce with combined wordlists
+    - puredns: DNS bruteforce with wildcard filtering via massdns
     - bbot: Comprehensive subdomain enumeration (passive + active)
     - waymore: URL discovery from archive sources (outputs to file only)
 
     Args:
         target_domain: Target domain for enumeration
-        wordlists: List of wordlist file paths to combine for shuffledns
+        wordlists: List of wordlist file paths to combine for puredns
 
     Returns:
         set: Aggregated set of all discovered subdomains
@@ -74,7 +74,7 @@ def subdomainEnumeration(target_domain, wordlists):
         }
 
         if combined_wordlist_path:
-            tools["shuffledns"] = (shufflednsExec, (target_domain, combined_wordlist_path))
+            tools["puredns"] = (purednsExec, (target_domain, combined_wordlist_path))
 
         # Run tools concurrently and get results
         results = runToolsParallel(tools)

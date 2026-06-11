@@ -11,7 +11,7 @@ No test/lint/typecheck framework configured. Validate by running against a test 
 ## Required host files (must pre-exist)
 
 - `~/.config/subfinder/config.yaml` — mounted read-only into subfinder container at `/root/.config/subfinder/config.yaml`
-- `~/.config/shuffledns/resolvers.txt` — mounted read-only into shuffledns container
+- `~/.config/puredns/resolvers.txt` — mounted read-only into puredns container
 - `~/.config/bbot/bbot.yml` + `~/.config/bbot/secrets.yml` — mounted read-write into bbot container (bbot writes temp files to config dir)
 - `~/.bbot/` — created if missing, mounted into bbot container to persist cache/wordlists/tools
 - `~/.config/waymore/config.yml` — waymore config with API keys and filters (must be installed via pipx)
@@ -25,7 +25,7 @@ pywebrecon.py → src/assets.py → src/commands.py (Docker wrappers)
 
 ### Workflow
 
-1. **subdomainEnumeration** (concurrent via `ThreadPoolExecutor`): crt.sh, subfinder, bbot, shuffledns, waymore
+1. **subdomainEnumeration** (concurrent via `ThreadPoolExecutor`): crt.sh, subfinder, bbot, puredns, waymore
    - Results aggregated into a single `set[str]`
    - bbot runs with `-p subdomain-enum -rf passive` (passive-only, uses API keys from config)
    - waymore runs in mode `U` (URLs only), outputs to `{domain}/domain-recon/waymore_urls.txt`
@@ -37,8 +37,8 @@ pywebrecon.py → src/assets.py → src/commands.py (Docker wrappers)
 - Runtime is auto-detected at startup by calling `detectRuntime()` (`which podman` → podman, else docker). Set in `src/commands.py:RUNTIME`.
 - All containers use `--name <tool>` so they appear in `docker ps` / `podman ps`.
 - `dnsx` and `httpx` use `--userns=keep-id` (podman) or `--user $(id -u):$(id -g)` (docker) so output files are owned by host user.
-- `subfinder`, `shuffledns`, `bbot` do NOT use user namespace flags (they only emit stdout, no host file writes).
-- Temp input files: `NamedTemporaryFile(delete=True)` for dnsx/httpx input. Combined wordlist for shuffledns uses `delete=False` and is manually `os.unlink()`ed in a `finally` block.
+- `subfinder`, `puredns`, `bbot` do NOT use user namespace flags (they only emit stdout, no host file writes).
+- Temp input files: `NamedTemporaryFile(delete=True)` for dnsx/httpx input. Combined wordlist for puredns uses `delete=False` and is manually `os.unlink()`ed in a `finally` block.
 - bb timeout: 3600s (comprehensive). All others: 1800s.
 - waymore is NOT a Docker tool — it's installed via pipx and runs as a native subprocess. It checks for the `waymore` binary at runtime and raises `FileNotFoundError` if missing.
 
@@ -65,7 +65,7 @@ Inside the `runTool` closure, exceptions are caught and displayed as red ❌ in 
 | Image | Tool | Purpose |
 |---|---|---|
 | `projectdiscovery/subfinder:latest` | subfinder | Passive subdomain discovery |
-| `projectdiscovery/shuffledns:latest` | shuffledns | DNS bruteforce |
+| `secsi/puredns:latest` | puredns | DNS bruteforce with wildcard filtering |
 | `projectdiscovery/dnsx:latest` | dnsx | DNS resolution |
 | `projectdiscovery/httpx:latest` | httpx | HTTP probing |
 | `blacklanternsecurity/bbot:latest` | bbot | Comprehensive subdomain enum (passive only) |

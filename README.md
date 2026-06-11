@@ -9,7 +9,7 @@ pyWebRecon automates the subdomain discovery process by orchestrating multiple i
 ## Key Features
 
 **Multi-Tool Orchestration**
-- Integrates 7 security tools (subfinder, shuffledns, bbot, dnsx, httpx, crt.sh API, waymore)
+- Integrates 7 security tools (subfinder, puredns, bbot, dnsx, httpx, crt.sh API, waymore)
 - Most tools run via Docker containers — zero local dependencies beyond Docker and Python
 - Containers are named after their tool (`docker ps` shows `dnsx`, `httpx`, etc.)
 - Handles tool dependencies and execution order automatically
@@ -49,14 +49,14 @@ Waymore requires a config file at `~/.config/waymore/config.yml`. On first run, 
 
 ### Docker Images (pulled automatically on first run)
 - `projectdiscovery/subfinder:latest` — Passive subdomain discovery
-- `projectdiscovery/shuffledns:latest` — DNS bruteforce
+- `secsi/puredns:latest` — DNS bruteforce with wildcard filtering
 - `projectdiscovery/dnsx:latest` — DNS resolution
 - `projectdiscovery/httpx:latest` — HTTP probing
 - `blacklanternsecurity/bbot:latest` — Comprehensive subdomain enumeration
 
 ### Required Local Files
 - `~/.config/subfinder/config.yaml` — API keys for subfinder ([config docs](https://docs.projectdiscovery.io/opensource/subfinder/install))
-- `~/.config/shuffledns/resolvers.txt` — DNS resolvers list, one IP per line ([resolvers reference](https://github.com/trickest/resolvers))
+- `~/.config/puredns/resolvers.txt` — DNS resolvers list, one IP per line ([resolvers reference](https://github.com/trickest/resolvers))
 - `~/.config/bbot/bbot.yml` + `~/.config/bbot/secrets.yml` — API keys for bbot ([config docs](https://www.blacklanternsecurity.com/bbot/Stable/scanning/configuration/))
 - `~/.config/waymore/config.yml` — waymore config with API keys and filters ([config docs](https://github.com/xnl-h4ck3r/waymore#configyml))
 
@@ -71,7 +71,7 @@ python3 pywebrecon.py -d <target-domain> -w <wordlist> [wordlist2] [wordlist3] .
 # Single wordlist
 python3 pywebrecon.py -d example.com -w /path/to/subdomains.txt
 
-# Multiple wordlists (combined into single shuffledns process)
+# Multiple wordlists (combined into single puredns process)
 python3 pywebrecon.py -d example.com \
   -w /path/to/small.txt /path/to/large.txt
 ```

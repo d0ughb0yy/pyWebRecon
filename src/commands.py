@@ -34,7 +34,7 @@ def _containerRunArgs() -> list[str]:
 
 REQUIRED_IMAGES = [
     "docker.io/projectdiscovery/subfinder:latest",
-    "docker.io/projectdiscovery/shuffledns:latest",
+    "docker.io/secsi/puredns:latest",
     "docker.io/projectdiscovery/dnsx:latest",
     "docker.io/projectdiscovery/httpx:latest",
     "docker.io/blacklanternsecurity/bbot:latest",
@@ -120,31 +120,36 @@ def dnsxExec(domains, target_domain, output_filename):
     return resolved_domains
 
 
-def shufflednsExec(target, wordlist):
-    """Run shuffledns DNS bruteforce via container and return subdomains as a set."""
+def purednsExec(target, wordlist):
+    """Run puredns DNS bruteforce via container and return subdomains as a set."""
     abs_wordlist = os.path.abspath(wordlist)
-    resolvers = os.path.expanduser("~/.config/shuffledns/resolvers.txt")
+    resolvers = os.path.expanduser("~/.config/puredns/resolvers.txt")
     abs_resolvers = os.path.abspath(resolvers)
+
+    if not os.path.exists(abs_resolvers):
+        raise FileNotFoundError(
+            f"puredns resolvers file not found at {abs_resolvers}. "
+            "Download from https://github.com/trickest/resolvers and save it there."
+        )
 
     try:
         result = subprocess.run(
             [
                 RUNTIME, "run", "--rm", "--name",
-                "shuffledns",
+                "puredns",
                 "-v",
                 f"{abs_wordlist}:{abs_wordlist}:ro,z",
                 "-v",
                 f"{abs_resolvers}:{abs_resolvers}:ro,z",
-                "docker.io/projectdiscovery/shuffledns:latest",
-                "-d",
-                target,
-                "-w",
+                "docker.io/secsi/puredns:latest",
+                "bruteforce",
                 abs_wordlist,
+                target,
                 "-r",
                 abs_resolvers,
-                "-silent",
-                "-t",
-                "1000",
+                "-q",
+                "--rate-limit-trusted",
+                "30",
             ],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -152,15 +157,15 @@ def shufflednsExec(target, wordlist):
             timeout=GLOBAL_TIMEOUT,
         )
         if result.returncode != 0:
-            raise Exception(f"shuffledns failed: {result.stderr}")
+            raise Exception(f"puredns failed: {result.stderr}")
     except subprocess.TimeoutExpired:
         subprocess.run(
-            [RUNTIME, "kill", "shuffledns"],
+            [RUNTIME, "kill", "puredns"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
         raise Exception(
-            "shuffledns timed out — try using smaller wordlists or fewer wordlist files"
+            "puredns timed out — try using smaller wordlists or fewer wordlist files"
         )
 
     subdomains = set()
